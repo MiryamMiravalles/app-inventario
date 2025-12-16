@@ -1,0 +1,5 @@
+{
+  "name": "Business Finance Dashboard",
+  "description": "A web application to manage and visualize business finances, including cash flow, employee control, supplier expenses, and structural costs. It allows recording cash flow sessions, calculating personnel costs, controlling supplier expenses, and monitoring the cost structure, all centralized in an interactive dashboard with filtering and data export.",
+  "requestFramePermissions": []
+}
