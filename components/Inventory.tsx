@@ -96,6 +96,7 @@ interface CategoryAccordionProps {
   itemCount: number;
   initialOpen?: boolean;
 }
+
 // Función para calcular el valor total de un pedido
 const calculateOrderTotal = (
   order: PurchaseOrder,
@@ -111,6 +112,141 @@ const calculateOrderTotal = (
     return total + item.quantity * price;
   }, 0);
 };
+
+// --- COMPONENTE: Calculadora de Cajas Vacías (Versión Mediana a la Izquierda) ---
+const CalculatorRow = ({
+  label,
+  multiplier,
+  field,
+  boxCounts,
+  setBoxCounts,
+}: {
+  label: string;
+  multiplier: number;
+  field: string;
+  boxCounts: any;
+  setBoxCounts: any;
+}) => {
+  // Calculamos el valor individual
+  const individualValue = (boxCounts[field] || 0) * multiplier;
+
+  return (
+    <div className="flex items-center justify-between bg-slate-700/20 p-2 px-3 rounded border border-slate-600/30 text-[13px] mb-1.5">
+      <span className="text-slate-200 font-medium w-28 truncate">
+        {label} <small className="text-[10px] opacity-40">x{multiplier}</small>
+      </span>
+      <div className="flex items-center gap-3">
+        <input
+          type="number"
+          min="0"
+          placeholder="0"
+          value={boxCounts[field] || ""}
+          onChange={(e) => {
+            const val = e.target.value === "" ? 0 : Number(e.target.value);
+            setBoxCounts((prev: any) => ({ ...prev, [field]: val }));
+          }}
+          className="w-14 bg-slate-800 text-white p-1 rounded border border-slate-600 text-center text-sm focus:ring-2 focus:ring-violet-500 outline-none"
+        />
+        <div className="w-10 text-right">
+          <span className="text-yellow-400 font-bold">{individualValue}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+const EmptyBoxesCalculator: React.FC<{
+  inventoryItems: InventoryItem[];
+  onSaveInventoryItem: (item: InventoryItem) => void;
+}> = ({ inventoryItems, onSaveInventoryItem }) => {
+  const [boxCounts, setBoxCounts] = useState({
+    schweppes: 0,
+    cocaCola: 0,
+    cocaColaZero: 0,
+    pepsi: 0,
+    ambar: 0,
+    moritz: 0,
+  });
+
+  // Cálculos individuales con los nombres de campo correctos
+  const calc = {
+    schweppes: boxCounts.schweppes * 28,
+    cocaCola: boxCounts.cocaCola * 24,
+    cocaColaZero: boxCounts.cocaColaZero * 24,
+    pepsi: boxCounts.pepsi * 24,
+    ambar: boxCounts.ambar * 24,
+    moritz: boxCounts.moritz * 24,
+  };
+
+  const totalGlobal = Object.values(calc).reduce((a, b) => a + b, 0);
+
+  const handleApply = () => {
+    const item = inventoryItems.find(
+      (i) => i.name.toLowerCase() === "cajas vacias"
+    );
+    if (item) {
+      onSaveInventoryItem({
+        ...item,
+        stockByLocation: { Almacén: totalGlobal },
+      });
+      alert(`Aplicado: ${totalGlobal} unidades.`);
+    } else {
+      alert("Error: No se encontró 'Cajas vacias' en el inventario.");
+    }
+  };
+
+  // Función Row corregida: cada una apunta a su propio 'field'
+  const Row = ({
+    label,
+    value,
+    field,
+  }: {
+    label: string;
+    value: number;
+    field: keyof typeof boxCounts;
+  }) => (
+    <div className="flex items-center justify-between bg-slate-700/20 p-2 px-3 rounded border border-slate-600/30 text-[13px] mb-1.5">
+      <span className="text-slate-200 font-medium w-24 truncate">{label}</span>
+      <div className="flex items-center gap-3">
+        <input
+          type="number"
+          min="0"
+          placeholder="0"
+          value={boxCounts[field] || ""}
+          onChange={(e) => {
+            const val = e.target.value === "" ? 0 : Number(e.target.value);
+            setBoxCounts({ ...boxCounts, [field]: val });
+          }}
+          className="w-14 bg-slate-800 text-white p-1 rounded border border-slate-600 text-center text-sm focus:ring-1 focus:ring-violet-500 outline-none"
+        />
+        <span className="text-yellow-400 font-bold w-10 text-right">
+          {value}
+        </span>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 mt-6 shadow-2xl max-w-[320px] ml-0 border-t-4 border-t-violet-500">
+      <h3 className="text-[14px] font-bold text-white mb-4 flex items-center gap-2 uppercase tracking-wide">
+        📦 Recuento de Cajas
+      </h3>
+
+      <div className="flex flex-col mb-4">
+        <Row label="Schweppes" value={calc.schweppes} field="schweppes" />
+        <Row label="Coca Cola" value={calc.cocaCola} field="cocaCola" />
+        <Row
+          label="Coca Cola Zero"
+          value={calc.cocaColaZero}
+          field="cocaColaZero"
+        />
+        <Row label="Pepsi" value={calc.pepsi} field="pepsi" />
+        <Row label="Ambar" value={calc.ambar} field="ambar" />
+        <Row label="Moritz" value={calc.moritz} field="moritz" />
+      </div>
+    </div>
+  );
+};
+
 const CategoryAccordion: React.FC<CategoryAccordionProps> = ({
   title,
   children,
@@ -1938,8 +2074,13 @@ const InventoryComponent: React.FC<InventoryProps> = ({
                 </CategoryAccordion>
               ))}
           </div>
+          <EmptyBoxesCalculator
+            inventoryItems={inventoryItems}
+            onSaveInventoryItem={onSaveInventoryItem}
+          />
         </div>
       )}
+
       {activeTab === "orders" && (
         <div>
                     {/* Contenedor que alinea el botón a la derecha */}       

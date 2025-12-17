@@ -1509,6 +1509,37 @@ const initialInventoryItems: InventoryItem[] = [
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["BARRIL 500LT"] || 0,
   },
+
+  // Material y Menaje
+  {
+    id: "m1",
+    name: "Vasos",
+    category: "📦 Material",
+    stockByLocation: createInitialStockObject(0),
+    pricePerUnitWithoutIVA: 0,
+  },
+  {
+    id: "m2",
+    name: "Chupitos",
+    category: "📦 Material",
+    stockByLocation: createInitialStockObject(0),
+    pricePerUnitWithoutIVA: 0,
+  },
+  {
+    id: "m3",
+    name: "Pajitas",
+    category: "📦 Material",
+    stockByLocation: createInitialStockObject(0),
+    pricePerUnitWithoutIVA: 0,
+  },
+
+  {
+    id: "cajas-vacias-01",
+    name: "Cajas vacias",
+    category: "📦 Embalajes",
+    stockByLocation: { Almacén: 0 }, // Solo una ubicación base para el total
+    pricePerUnitWithoutIVA: 0,
+  },
 ];
 
 const initialPurchaseOrders: PurchaseOrder[] = [];
@@ -1897,27 +1928,43 @@ const App: React.FC = () => {
       try {
         // 2. Fetch Inventory Items
         const items = (await api.inventory.list()) as InventoryItem[];
-
         let finalItems = items;
 
         if (items.length === 0) {
-          // SEEDING LOGIC: If DB is empty, use initial local list and save them to DB
+          // SEEDING LOGIC: Si la DB está vacía, guarda todo
           console.log("Database is empty. Seeding initial inventory...");
           const seedPromises = initialInventoryItems.map((item) =>
             api.inventory.save(item)
           );
           finalItems = (await Promise.all(seedPromises)) as InventoryItem[];
         } else {
-          // 🛑 CORRECCIÓN DE PERSISTENCIA: Fusionar precios locales con datos cargados de la DB
+          // --- 🚀 NUEVA LÓGICA: Sincronización de Material Faltante ---
+          // Buscamos los artículos que tengan la categoría "📦 Material" en tu lista local
+          const materialToSync = initialInventoryItems.filter(
+            (i) => i.category === "📦 Material"
+          );
+
+          for (const materialItem of materialToSync) {
+            // Si el nombre no existe en los items que vienen de la base de datos, lo guardamos
+            const exists = items.some(
+              (dbItem) => dbItem.name === materialItem.name
+            );
+            if (!exists) {
+              console.log(`Sincronizando artículo nuevo: ${materialItem.name}`);
+              const savedItem = await api.inventory.save(materialItem);
+              items.push(savedItem as InventoryItem); // Lo añadimos a la lista actual
+            }
+          }
+          // -----------------------------------------------------------
+
+          // Fusionar precios locales con datos cargados de la DB
           finalItems = items.map((item) => {
             const seedPrice = itemPriceMap.get(item.id);
-            // Si tenemos un precio en el seeding, y el item de la DB no lo tiene (o es 0), lo actualizamos localmente.
             if (
               seedPrice !== undefined &&
               (item.pricePerUnitWithoutIVA === undefined ||
                 item.pricePerUnitWithoutIVA === 0)
             ) {
-              // NO PERSISTIMOS aquí, solo lo arreglamos en el frontend para esta sesión.
               return { ...item, pricePerUnitWithoutIVA: seedPrice };
             }
             return item;
@@ -1935,7 +1982,6 @@ const App: React.FC = () => {
         setInventoryHistory(history);
       } catch (e) {
         console.error("Error loading initial data:", e);
-        // Se puede añadir una alerta si la conexión a la DB falla por completo
         alert(
           `Error al cargar la información inicial de la base de datos: ${
             (e as Error).message
@@ -1944,7 +1990,7 @@ const App: React.FC = () => {
       }
     };
     loadInitialData();
-  }, [addOrUpdate, initialInventoryItems]); // Dependencias: addOrUpdate y initialInventoryItems (para el priceMap)
+  }, [initialInventoryItems]); // Eliminamos addOrUpdate de dependencias si no se usa dentro
 
   const renderContent = () => {
     // Solo renderiza el componente de Inventario
