@@ -1405,59 +1405,70 @@ const InventoryComponent: React.FC<InventoryProps> = ({
 
   const renderInventoryForm = () => (
     <div className="space-y-4">
-      {/* 🛑 CORRECCIÓN: Mostrar campo de nombre solo si es artículo nuevo */}
-      {!currentInventoryItem.id && (
+      {/* SECCIÓN NOMBRE: Ahora visible siempre para permitir edición */}
+      <div className="flex flex-col gap-1">
+        <label className="text-xs text-slate-400 font-medium ml-1">
+          Nombre del Artículo
+        </label>
         <input
           type="text"
           placeholder="Nombre del Artículo"
           value={currentInventoryItem.name || ""}
           onChange={(e) => handleInventoryChange("name", e.target.value)}
-          className="bg-gray-700 text-white rounded p-2 w-full"
+          className="bg-gray-700 text-white rounded p-2 w-full border border-gray-600 focus:ring-2 focus:ring-indigo-500"
           required
         />
-      )}
-
-      {/* 🛑 CORRECCIÓN: Campo de precio con manejo de estado temporal para decimales */}
-      <div className="relative">
-        <input
-          type="text"
-          placeholder="Precio Unitario sin IVA (Ej: 12,50)"
-          // 🛑 Usar el estado temporal para el valor
-          value={tempPriceString}
-          // 🛑 Usar la nueva función para el manejo de la cadena
-          onChange={(e) => handlePriceInputChange(e.target.value)}
-          // 🛑 Aplicar el valor numérico al estado real en blur
-          onBlur={handlePriceInputBlur}
-          className="bg-gray-700 text-white rounded p-2 w-full pr-8"
-        />
-        <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 pointer-events-none">
-          €
-        </span>
       </div>
 
-      <select
-        value={currentInventoryItem.category || ""}
-        onChange={(e) => handleInventoryChange("category", e.target.value)}
-        className="bg-gray-700 text-white rounded p-2 w-full"
-      >
-        <option value="" disabled>
-          Seleccionar Categoría
-        </option>
-        {CATEGORY_ORDER.map((category) => (
-          <option key={category} value={category}>
-            {category}
+      {/* SECCIÓN PRECIO: Usa el estado temporal para manejar decimales correctamente */}
+      <div className="flex flex-col gap-1">
+        <label className="text-xs text-slate-400 font-medium ml-1">
+          Precio Unitario sin IVA
+        </label>
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Precio Unitario sin IVA (Ej: 12,50)"
+            value={tempPriceString}
+            onChange={(e) => handlePriceInputChange(e.target.value)}
+            onBlur={handlePriceInputBlur}
+            className="bg-gray-700 text-white rounded p-2 w-full pr-8 border border-gray-600 focus:ring-2 focus:ring-indigo-500"
+          />
+          <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 pointer-events-none">
+            €
+          </span>
+        </div>
+      </div>
+
+      {/* SECCIÓN CATEGORÍA */}
+      <div className="flex flex-col gap-1">
+        <label className="text-xs text-slate-400 font-medium ml-1">
+          Categoría
+        </label>
+        <select
+          value={currentInventoryItem.category || ""}
+          onChange={(e) => handleInventoryChange("category", e.target.value)}
+          className="bg-gray-700 text-white rounded p-2 w-full border border-gray-600 focus:ring-2 focus:ring-indigo-500"
+        >
+          <option value="" disabled>
+            Seleccionar Categoría
           </option>
-        ))}
-        {currentInventoryItem.category &&
-          !CATEGORY_ORDER.includes(currentInventoryItem.category) && (
-            <option
-              key={currentInventoryItem.category}
-              value={currentInventoryItem.category}
-            >
-              {currentInventoryItem.category} (Custom)
+          {CATEGORY_ORDER.map((category) => (
+            <option key={category} value={category}>
+              {category}
             </option>
-          )}
-      </select>
+          ))}
+          {currentInventoryItem.category &&
+            !CATEGORY_ORDER.includes(currentInventoryItem.category) && (
+              <option
+                key={currentInventoryItem.category}
+                value={currentInventoryItem.category}
+              >
+                {currentInventoryItem.category} (Personalizada)
+              </option>
+            )}
+        </select>
+      </div>
     </div>
   );
 
