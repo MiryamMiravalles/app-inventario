@@ -627,8 +627,9 @@ const InventoryComponent: React.FC<InventoryProps> = ({
     const lowerTerm = orderSearchTerm.toLowerCase();
     return inventoryItems.filter(
       (item) =>
-        item.name.toLowerCase().includes(lowerTerm) ||
-        item.category.toLowerCase().includes(lowerTerm)
+        !item.name.toLowerCase().includes("cajas vacias") &&
+        (item.name.toLowerCase().includes(lowerTerm) ||
+          item.category.toLowerCase().includes(lowerTerm))
     );
   }, [inventoryItems, orderSearchTerm]);
 
@@ -1086,9 +1087,7 @@ const InventoryComponent: React.FC<InventoryProps> = ({
     };
 
     onSaveInventoryRecord(newRecord);
-    alert(
-      `Inventario guardado. Ahora el Excel tendrá una fila por cada marca de caja con su stock total.`
-    );
+    alert(`Inventario guardado (${formattedDate})`);
   };
   // --- Guardar Análisis de Consumo (Pestaña Análisis) ---
   const handleSaveCurrentInventory = async () => {
