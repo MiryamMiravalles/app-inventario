@@ -1514,30 +1514,22 @@ const initialInventoryItems: InventoryItem[] = [
   {
     id: "m1",
     name: "Vasos",
-    category: "📦 Material",
+    category: "🥤 Material",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: 0,
   },
   {
     id: "m2",
     name: "Chupitos",
-    category: "📦 Material",
+    category: "🥤 Material",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: 0,
   },
   {
     id: "m3",
     name: "Pajitas",
-    category: "📦 Material",
+    category: "🥤 Material",
     stockByLocation: createInitialStockObject(0),
-    pricePerUnitWithoutIVA: 0,
-  },
-
-  {
-    id: "cajas-vacias-01",
-    name: "Cajas vacias",
-    category: "📦 Embalajes",
-    stockByLocation: { Almacén: 0 }, // Solo una ubicación base para el total
     pricePerUnitWithoutIVA: 0,
   },
 ];
@@ -1939,9 +1931,9 @@ const App: React.FC = () => {
           finalItems = (await Promise.all(seedPromises)) as InventoryItem[];
         } else {
           // --- 🚀 NUEVA LÓGICA: Sincronización de Material Faltante ---
-          // Buscamos los artículos que tengan la categoría "📦 Material" en tu lista local
+          // Buscamos los artículos que tengan la categoría "🥤 Material" en tu lista local
           const materialToSync = initialInventoryItems.filter(
-            (i) => i.category === "📦 Material"
+            (i) => i.category === "🥤 Material"
           );
 
           for (const materialItem of materialToSync) {

@@ -1,10 +1,4 @@
-import React, {
-  useState,
-  useMemo,
-  useEffect,
-  useRef,
-  useCallback,
-} from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   InventoryItem,
   PurchaseOrder,
@@ -238,7 +232,7 @@ const EmptyBoxesCalculator: React.FC<{
   return (
     <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 mt-6 shadow-2xl max-w-[320px] ml-0 border-t-4 border-t-violet-500">
       <h3 className="text-[14px] font-bold text-white mb-4 flex items-center gap-2 uppercase tracking-wide">
-        📦 Recuento de Cajas
+        [📦] Cajas Vacías
       </h3>
 
       <div className="flex flex-col">
@@ -257,7 +251,7 @@ const EmptyBoxesCalculator: React.FC<{
           setBoxCounts={setBoxCounts}
         />
         <CalculatorRow
-          label="CC Zero"
+          label="Coca Cola Zero"
           multiplier={24}
           field="cocaColaZero"
           boxCounts={boxCounts}
@@ -607,14 +601,17 @@ const InventoryComponent: React.FC<InventoryProps> = ({
   }, [isOrderModalOpen]);
 
   const filteredItems = useMemo(() => {
-    // 🛑 CORRECCIÓN: Usamos un Map para garantizar la deduplicación por ID.
     const uniqueItemsMap = new Map<string, InventoryItem>();
     inventoryItems.forEach((item) => {
       uniqueItemsMap.set(item.id, item);
     });
-    let filteredList = Array.from(uniqueItemsMap.values());
 
-    // Aplicar búsqueda
+    // Convertimos a array y filtramos "cajas vacias"
+    let filteredList = Array.from(uniqueItemsMap.values()).filter(
+      (item) => !item.name.toLowerCase().includes("cajas vacias")
+    );
+
+    // Aplicar búsqueda del usuario si existe
     if (!searchTerm) return filteredList;
 
     const lowerTerm = searchTerm.toLowerCase();
@@ -656,7 +653,11 @@ const InventoryComponent: React.FC<InventoryProps> = ({
   const analysisGroupedItems = useMemo(() => {
     const groups: { [key: string]: typeof inventoryItems } = {};
 
-    inventoryItems.forEach((item) => {
+    const itemsForAnalysis = inventoryItems.filter(
+      (item) => !item.name.toLowerCase().includes("cajas vacias")
+    );
+
+    itemsForAnalysis.forEach((item) => {
       const category = item.category || "Uncategorized";
       if (!groups[category]) groups[category] = [];
       groups[category].push(item);
@@ -1455,42 +1456,54 @@ const InventoryComponent: React.FC<InventoryProps> = ({
                           item.stockByLocationSnapshot?.[loc] || 0;
                         return (
                           <td key={loc} className="p-1 text-center w-16">
-                            <div
-                              className={`bg-slate-700 rounded-md p-1 w-10 mx-auto text-sm ${
-                                stockValue > 0.001
-                                  ? "text-green-400 font-bold"
-                                  : "text-slate-400"
-                              }`}
-                            >
-                              {stockValue > 0.001
-                                ? stockValue.toFixed(1).replace(".", ",")
-                                : "0"}
-                            </div>
+                            {stockValue > 0.001 ? (
+                              <div className="bg-slate-700 rounded-md p-1 w-10 mx-auto text-sm text-green-400 font-bold">
+                                {item.category
+                                  .toLowerCase()
+                                  .includes("material")
+                                  ? Math.round(stockValue) // Redondeo para material
+                                  : stockValue.toFixed(1).replace(".", ",")}
+                              </div>
+                            ) : (
+                              <span className="text-slate-500">-</span>
+                            )}
                           </td>
                         );
                       })}
-
                       {/* VALOR TOTAL Y TOTAL: Vacíos si es cajas */}
                       <td
                         className={`p-1 text-center text-sm font-bold ${TOTAL_VALUE_WIDTH}`}
                       >
-                        {isCajasVacias
-                          ? ""
-                          : calculateSnapshotTotalValue(item) > 0.01
-                          ? `${calculateSnapshotTotalValue(item)
-                              .toFixed(2)
-                              .replace(".", ",")} €`
-                          : "0,00 €"}
+                        {isCajasVacias ? (
+                          ""
+                        ) : calculateSnapshotTotalValue(item) > 0.01 ? (
+                          `${calculateSnapshotTotalValue(item)
+                            .toFixed(2)
+                            .replace(".", ",")} €`
+                        ) : (
+                          <span className="text-slate-500 font-normal">-</span>
+                        )}
                       </td>
 
-                      <td
-                        className={`p-1 text-center text-lg font-bold ${TOTAL_STOCK_WIDTH}`}
-                      >
-                        {isCajasVacias
-                          ? ""
-                          : calculatedTotal > 0.001
-                          ? calculatedTotal.toFixed(1).replace(".", ",")
-                          : "0,0"}
+                      {/* TOTAL STOCK: En verde y con cuadro si hay valor, si no guion */}
+                      <td className={`p-1 text-center ${TOTAL_STOCK_WIDTH}`}>
+                        {isCajasVacias ? (
+                          ""
+                        ) : calculatedTotal > 0.001 ? (
+                          /* Mantenemos el recuadro verde largo (w-20) */
+                          <div className="bg-slate-700 rounded-md p-1 px-2 w-20 mx-auto text-lg font-bold text-green-400">
+                            {/* Comprobamos si es la categoría de material. 
+          Si lo es, usamos Math.round para quitar decimales.
+          Si no, mantenemos .toFixed(1) con la coma.
+      */}
+                            {item.category.toLowerCase().includes("material")
+                              ? Math.round(calculatedTotal)
+                              : calculatedTotal.toFixed(1).replace(".", ",")}
+                          </div>
+                        ) : (
+                          /* Si el stock es 0, mostramos el guion gris */
+                          <span className="text-slate-500">-</span>
+                        )}
                       </td>
                     </tr>
 
@@ -1527,7 +1540,7 @@ const InventoryComponent: React.FC<InventoryProps> = ({
                               {/* Ocupamos el hueco de las ubicaciones para el texto del cálculo */}
                               <td
                                 colSpan={INVENTORY_LOCATIONS.length + 2}
-                                className="p-1 text-right pr-6 text-[11px] text-slate-500 italic uppercase"
+                                className="p-1 text-right pr-6 text-[11px] text-slate-500 italic uppercase font bold"
                               >
                                 {cantidad} cajas x {m} uds =
                               </td>
@@ -1536,7 +1549,7 @@ const InventoryComponent: React.FC<InventoryProps> = ({
 
                               {/* Resultado final en amarillo */}
                               <td
-                                className={`p-1 text-right pr-4 text-sm font-bold text-yellow-400 ${TOTAL_STOCK_WIDTH}`}
+                                className={`text-center text-lg font-bold text-yellow-400 w-20 mx-auto px-2 ${TOTAL_STOCK_WIDTH}`}
                               >
                                 {total}
                               </td>
@@ -2028,8 +2041,7 @@ const InventoryComponent: React.FC<InventoryProps> = ({
                               ).map((loc) => (
                                 <td
                                   key={loc}
-                                  // 🛑 text-center para el input, y ancho fijo (w-16)
-                                  className={`p-1 whitespace-nowrap text-center w-16`}
+                                  className="p-1 whitespace-nowrap text-center w-16"
                                 >
                                   <input
                                     type="text"
@@ -2037,15 +2049,17 @@ const InventoryComponent: React.FC<InventoryProps> = ({
                                       tempStockValues[`${item.id}-${loc}`] !==
                                       undefined
                                         ? tempStockValues[`${item.id}-${loc}`]
-                                        : // 🛑 CORRECCIÓN: Si el stock es 0, el valor es "" (cadena vacía)
-                                        item.stockByLocation?.[loc] === 0
+                                        : item.stockByLocation?.[loc] === 0
                                         ? ""
-                                        : item.stockByLocation?.[loc] !==
-                                          undefined
-                                        ? String(
-                                            item.stockByLocation[loc]
-                                          ).replace(".", ",")
-                                        : ""
+                                        : item.category
+                                            .toLowerCase()
+                                            .includes("material")
+                                        ? Math.round(
+                                            item.stockByLocation?.[loc] || 0
+                                          ).toString() // Redondeo
+                                        : String(
+                                            item.stockByLocation?.[loc] || ""
+                                          ).replace(".", ",") // Decimal
                                     }
                                     onChange={(e) =>
                                       handleStockInputChange(
@@ -2057,7 +2071,6 @@ const InventoryComponent: React.FC<InventoryProps> = ({
                                     onBlur={() =>
                                       handleStockInputBlur(item, loc)
                                     }
-                                    // 🛑 ESTILO DE BOTÓN Y CENTRADO: p-1 para el padding, w-10 para el ancho, rounded-md
                                     className="bg-slate-700 text-white rounded-md p-1 w-10 text-center text-sm border border-slate-700 inline-block"
                                     placeholder="0"
                                   />
@@ -2091,9 +2104,12 @@ const InventoryComponent: React.FC<InventoryProps> = ({
                                       : "text-slate-400"
                                   }
                                 >
-                                  {/* 🛑 CORRECCIÓN: No mostrar "0,0" si el stock es 0 */}
                                   {totalStock > 0.001
-                                    ? totalStock.toFixed(1).replace(".", ",")
+                                    ? item.category
+                                        .toLowerCase()
+                                        .includes("material")
+                                      ? Math.round(totalStock) // Redondeo
+                                      : totalStock.toFixed(1).replace(".", ",") // Decimal con coma
                                     : "0,0"}
                                 </span>
                               </td>
@@ -2503,24 +2519,49 @@ const InventoryComponent: React.FC<InventoryProps> = ({
                             previousEndStock + pendingStock;
                           const endStock = totalStock;
                           const consumption = initialTotalStock - endStock;
-
+                          // Variable para saber si redondeamos
+                          const esMaterial = item.category
+                            .toLowerCase()
+                            .includes("material");
                           return (
                             <tr key={item.id} className="hover:bg-gray-700/50">
                               <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-white">
                                 {item.name}
                               </td>
+
+                              {/* 1. Stock Actual */}
                               <td className="px-4 py-4 whitespace-nowrap text-sm text-center text-gray-300">
-                                {totalStock.toFixed(1).replace(".", ",")}
+                                {esMaterial
+                                  ? Math.round(totalStock)
+                                  : totalStock.toFixed(1).replace(".", ",")}
                               </td>
+
+                              {/* 2. En Pedidos (Suele ser material, así que redondeamos según categoría también) */}
                               <td className="px-4 py-4 whitespace-nowrap text-sm text-center text-yellow-400">
-                                {pendingStock.toFixed(1).replace(".", ",")}
+                                {esMaterial
+                                  ? Math.round(pendingStock)
+                                  : pendingStock.toFixed(1).replace(".", ",")}
                               </td>
+
+                              {/* 3. Stock Semana Anterior */}
                               <td className="px-4 py-4 whitespace-nowrap text-sm text-center text-gray-300">
-                                {previousEndStock.toFixed(1).replace(".", ",")}
+                                {esMaterial
+                                  ? Math.round(previousEndStock)
+                                  : previousEndStock
+                                      .toFixed(1)
+                                      .replace(".", ",")}
                               </td>
+
+                              {/* 4. Stock Inicial Total */}
                               <td className="px-4 py-4 whitespace-nowrap text-sm text-center text-blue-400 font-bold">
-                                {initialTotalStock.toFixed(1).replace(".", ",")}
+                                {esMaterial
+                                  ? Math.round(initialTotalStock)
+                                  : initialTotalStock
+                                      .toFixed(1)
+                                      .replace(".", ",")}
                               </td>
+
+                              {/* 5. Consumo (Mantenemos decimales para precisión o redondeamos si prefieres) */}
                               <td
                                 className={`px-4 py-4 whitespace-nowrap text-sm font-bold text-center ${
                                   consumption > 0
@@ -2528,7 +2569,9 @@ const InventoryComponent: React.FC<InventoryProps> = ({
                                     : "text-green-400"
                                 }`}
                               >
-                                {consumption.toFixed(1).replace(".", ",")}
+                                {esMaterial
+                                  ? Math.round(consumption)
+                                  : consumption.toFixed(1).replace(".", ",")}
                               </td>
                             </tr>
                           );
