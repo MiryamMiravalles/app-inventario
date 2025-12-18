@@ -1,4 +1,10 @@
-import React, { useState, useMemo, useEffect, useCallback } from "react";
+import React, {
+  useState,
+  useMemo,
+  useEffect,
+  useRef,
+  useCallback,
+} from "react";
 import {
   InventoryItem,
   PurchaseOrder,
@@ -16,7 +22,7 @@ import {
   SearchIcon,
   InventoryIcon,
   RefreshIcon,
-  ExportIcon, // IMPORTADO
+  ExportIcon,
 } from "./icons";
 import { INVENTORY_LOCATIONS } from "../constants";
 
@@ -35,8 +41,8 @@ interface InventoryProps {
   ) => void;
   onSaveInventoryRecord: (record: InventoryRecord) => void;
   onDeleteAllInventoryRecords: () => void;
-  onDeleteInventoryRecord: (id: string) => void; // AÑADIDO
-  onDownloadHistoryRecord: (id: string, label: string) => void; // AÑADIDO
+  onDeleteInventoryRecord: (id: string) => void;
+  onDownloadHistoryRecord: (id: string, label: string) => void;
   activeTab: "inventory" | "orders" | "analysis" | "history";
   formatUTCToLocal: (utcDateString: string | Date | undefined) => string;
   handleResetInventoryStocks: () => void;
@@ -114,21 +120,33 @@ const calculateOrderTotal = (
 };
 
 // --- COMPONENTE: Calculadora de Cajas Vacías (Versión Mediana a la Izquierda) ---
+// 1. Tipos de datos
+interface BoxCounts {
+  schweppes: number;
+  cocaCola: number;
+  cocaColaZero: number;
+  pepsi: number;
+  ambar: number;
+  moritz: number;
+}
+
+interface CalculatorRowProps {
+  label: string;
+  multiplier: number;
+  field: keyof BoxCounts;
+  boxCounts: BoxCounts;
+  setBoxCounts: React.Dispatch<React.SetStateAction<BoxCounts>>;
+}
+
+// 2. Componente de fila (Fuera para no perder el foco del teclado)
 const CalculatorRow = ({
   label,
   multiplier,
   field,
   boxCounts,
   setBoxCounts,
-}: {
-  label: string;
-  multiplier: number;
-  field: string;
-  boxCounts: any;
-  setBoxCounts: any;
-}) => {
-  // Calculamos el valor individual
-  const individualValue = (boxCounts[field] || 0) * multiplier;
+}: CalculatorRowProps) => {
+  const individualValue = (Number(boxCounts[field]) || 0) * multiplier;
 
   return (
     <div className="flex items-center justify-between bg-slate-700/20 p-2 px-3 rounded border border-slate-600/30 text-[13px] mb-1.5">
@@ -139,11 +157,12 @@ const CalculatorRow = ({
         <input
           type="number"
           min="0"
-          placeholder="0"
-          value={boxCounts[field] || ""}
+          // Muestra vacío si es 0 para facilitar la escritura rápida
+          value={boxCounts[field] === 0 ? "" : boxCounts[field]}
           onChange={(e) => {
-            const val = e.target.value === "" ? 0 : Number(e.target.value);
-            setBoxCounts((prev: any) => ({ ...prev, [field]: val }));
+            const val =
+              e.target.value === "" ? 0 : parseInt(e.target.value, 10);
+            setBoxCounts((prev) => ({ ...prev, [field]: val }));
           }}
           className="w-14 bg-slate-800 text-white p-1 rounded border border-slate-600 text-center text-sm focus:ring-2 focus:ring-violet-500 outline-none"
         />
@@ -155,98 +174,121 @@ const CalculatorRow = ({
   );
 };
 
+// 3. Componente de la Calculadora
 const EmptyBoxesCalculator: React.FC<{
   inventoryItems: InventoryItem[];
   onSaveInventoryItem: (item: InventoryItem) => void;
 }> = ({ inventoryItems, onSaveInventoryItem }) => {
-  // Buscamos el ítem una sola vez
-  const boxesItem = inventoryItems.find((i) =>
-    i.name.toLowerCase().includes("cajas vacias")
-  );
-
-  // Estado local para que los inputs respondan al teclado inmediatamente
-  const [boxCounts, setBoxCounts] = useState({
-    schweppes: 0,
-    cocaCola: 0,
-    cocaColaZero: 0,
-    pepsi: 0,
-    ambar: 0,
-    moritz: 0,
+  // Inicialización desde localStorage para persistencia
+  const [boxCounts, setBoxCounts] = useState<BoxCounts>(() => {
+    const saved = localStorage.getItem("boxCounts_persistence");
+    return saved
+      ? JSON.parse(saved)
+      : {
+          schweppes: 0,
+          cocaCola: 0,
+          cocaColaZero: 0,
+          pepsi: 0,
+          ambar: 0,
+          moritz: 0,
+        };
   });
 
-  // Sincronización inicial: Cargar de la DB a la calculadora al abrir la página
+  // Guardar en localStorage cada vez que cambie un valor
   useEffect(() => {
-    if (boxesItem?.details) {
-      setBoxCounts(boxesItem.details as any);
+    localStorage.setItem("boxCounts_persistence", JSON.stringify(boxCounts));
+  }, [boxCounts]);
+
+  // Cálculos individuales memorizados
+  const calc = useMemo(
+    () => ({
+      schweppes: boxCounts.schweppes * 28,
+      cocaCola: boxCounts.cocaCola * 24,
+      cocaColaZero: boxCounts.cocaColaZero * 24,
+      pepsi: boxCounts.pepsi * 24,
+      ambar: boxCounts.ambar * 24,
+      moritz: boxCounts.moritz * 24,
+    }),
+    [boxCounts]
+  );
+
+  // Suma total para la base de datos
+  const totalGlobal = useMemo(
+    () =>
+      Object.values(calc).reduce((acc: number, curr: number) => acc + curr, 0),
+    [calc]
+  );
+
+  // Sincronización con la base de datos (Item "Cajas vacias")
+  useEffect(() => {
+    const item = inventoryItems.find((i) =>
+      i.name.toLowerCase().includes("cajas vacias")
+    );
+    if (item) {
+      const currentStock = item.stockByLocation?.Almacén || 0;
+      if (currentStock !== totalGlobal) {
+        onSaveInventoryItem({
+          ...item,
+          stockByLocation: { ...item.stockByLocation, Almacén: totalGlobal },
+        });
+      }
     }
-  }, [boxesItem?.id]); // Solo se dispara cuando el ítem carga por primera vez
-
-  const multipliers: Record<string, number> = {
-    schweppes: 28,
-    cocaCola: 24,
-    cocaColaZero: 24,
-    pepsi: 24,
-    ambar: 24,
-    moritz: 24,
-  };
-
-  const handleInputChange = (field: string, value: string) => {
-    const numValue = value === "" ? 0 : parseInt(value);
-    if (isNaN(numValue)) return;
-
-    const newCounts = { ...boxCounts, [field]: numValue };
-    setBoxCounts(newCounts); // Actualiza la pantalla inmediatamente
-
-    // Calculamos el nuevo total para Almacén
-    const newTotal = Object.entries(newCounts).reduce((acc, [f, v]) => {
-      return acc + Number(v) * (multipliers[f] || 24);
-    }, 0);
-
-    // Guardamos en la base de datos
-    if (boxesItem) {
-      onSaveInventoryItem({
-        ...boxesItem,
-        stockByLocation: { ...boxesItem.stockByLocation, Almacén: newTotal },
-        details: newCounts,
-      });
-    }
-  };
-
-  if (!boxesItem) return null;
+  }, [totalGlobal, inventoryItems, onSaveInventoryItem]);
 
   return (
-    <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 mt-6 shadow-2xl max-w-[320px] border-t-4 border-t-violet-500">
-      <h3 className="text-[14px] font-bold text-white mb-4 uppercase tracking-wide">
+    <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 mt-6 shadow-2xl max-w-[320px] ml-0 border-t-4 border-t-violet-500">
+      <h3 className="text-[14px] font-bold text-white mb-4 flex items-center gap-2 uppercase tracking-wide">
         📦 Recuento de Cajas
       </h3>
-      <div className="flex flex-col gap-1.5">
-        {Object.entries(multipliers).map(([brand, mult]) => (
-          <div
-            key={brand}
-            className="flex items-center justify-between bg-slate-700/20 p-2 px-3 rounded border border-slate-600/30 text-[13px]"
-          >
-            <span className="text-slate-200 font-medium capitalize">
-              {brand.replace(/([A-Z])/g, " $1")}{" "}
-              <small className="text-[10px] opacity-40">x{mult}</small>
-            </span>
-            <div className="flex items-center gap-3">
-              <input
-                type="number"
-                min="0"
-                value={(boxCounts as any)[brand] || ""}
-                onChange={(e) => handleInputChange(brand, e.target.value)}
-                className="w-14 bg-slate-900 text-white p-1 rounded border border-slate-600 text-center text-sm focus:ring-2 focus:ring-violet-500 outline-none"
-              />
-              <span className="text-yellow-400 font-bold w-10 text-right">
-                {((boxCounts as any)[brand] || 0) * mult}
-              </span>
-            </div>
-          </div>
-        ))}
+
+      <div className="flex flex-col">
+        <CalculatorRow
+          label="Schweppes"
+          multiplier={28}
+          field="schweppes"
+          boxCounts={boxCounts}
+          setBoxCounts={setBoxCounts}
+        />
+        <CalculatorRow
+          label="Coca Cola"
+          multiplier={24}
+          field="cocaCola"
+          boxCounts={boxCounts}
+          setBoxCounts={setBoxCounts}
+        />
+        <CalculatorRow
+          label="CC Zero"
+          multiplier={24}
+          field="cocaColaZero"
+          boxCounts={boxCounts}
+          setBoxCounts={setBoxCounts}
+        />
+        <CalculatorRow
+          label="Pepsi"
+          multiplier={24}
+          field="pepsi"
+          boxCounts={boxCounts}
+          setBoxCounts={setBoxCounts}
+        />
+        <CalculatorRow
+          label="Ambar"
+          multiplier={24}
+          field="ambar"
+          boxCounts={boxCounts}
+          setBoxCounts={setBoxCounts}
+        />
+        <CalculatorRow
+          label="Moritz"
+          multiplier={24}
+          field="moritz"
+          boxCounts={boxCounts}
+          setBoxCounts={setBoxCounts}
+        />
       </div>
     </div>
   );
 };
+
 const CategoryAccordion: React.FC<CategoryAccordionProps> = ({
   title,
   children,
@@ -977,8 +1019,7 @@ const InventoryComponent: React.FC<InventoryProps> = ({
     }
 
     const recordDate = new Date();
-
-    const formattedDate = new Date().toLocaleDateString("es-ES", {
+    const formattedDate = recordDate.toLocaleDateString("es-ES", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
@@ -987,18 +1028,24 @@ const InventoryComponent: React.FC<InventoryProps> = ({
     const recordItems: InventoryRecordItem[] = inventoryItems.map((item) => {
       const totalStock = calculateTotalStock(item);
       const pendingStock = stockInOrders[item.id] || 0;
+      // Identificamos el producto de cajas vacías
+      const isCajasVacias = item.name.toLowerCase().includes("cajas vacias");
+      const savedBoxDetails = localStorage.getItem("boxCounts_persistence");
+      const boxDetails = savedBoxDetails ? JSON.parse(savedBoxDetails) : null;
 
       return {
         itemId: item.id,
         name: item.name,
-        category: item.category, // Aseguramos la categoría
+        category: item.category,
         currentStock: totalStock,
         pendingStock: pendingStock,
         initialStock: totalStock,
         endStock: totalStock,
         consumption: 0,
         stockByLocationSnapshot: item.stockByLocation || {},
-        pricePerUnitWithoutIVA: item.pricePerUnitWithoutIVA, // AÑADIDO
+        pricePerUnitWithoutIVA: item.pricePerUnitWithoutIVA,
+        // Solo guardamos el desglose detallado si es el ítem de cajas vacías
+        details: isCajasVacias ? boxDetails : undefined,
       };
     });
 
@@ -1011,12 +1058,8 @@ const InventoryComponent: React.FC<InventoryProps> = ({
     };
 
     onSaveInventoryRecord(newRecord);
-
-    alert(
-      `Instantánea del inventario (${formattedDate}) guardada en el historial`
-    );
+    alert(`Inventario (${formattedDate}) guardado con desglose detallado.`);
   };
-
   // --- Guardar Análisis de Consumo (Pestaña Análisis) ---
   const handleSaveCurrentInventory = async () => {
     if (inventoryItems.length === 0) {
@@ -1033,7 +1076,7 @@ const InventoryComponent: React.FC<InventoryProps> = ({
         name: item.name,
         category: item.category,
         currentStock: totalStock,
-        // ... resto de campos
+        consumption: 0,
         details: item.details, // 🛑 AÑADE ESTA LÍNEA
         stockByLocationSnapshot: item.stockByLocation || {},
         pricePerUnitWithoutIVA: item.pricePerUnitWithoutIVA,
@@ -1373,111 +1416,129 @@ const InventoryComponent: React.FC<InventoryProps> = ({
             </thead>
             <tbody className="bg-gray-800 divide-y divide-gray-700">
               {itemsWithTotals.map((item, itemIndex) => {
+                const calculatedTotal = item.calculatedTotal || 0;
                 const isCajasVacias = item.name
                   .toLowerCase()
                   .includes("cajas vacias");
-                const calculatedTotal = item.calculatedTotal || 0;
-                const totalValue = calculateSnapshotTotalValue(item);
 
                 return (
                   <React.Fragment key={item.itemId || itemIndex}>
+                    {/* FILA PRINCIPAL: Totalmente limpia */}
                     <tr className="hover:bg-gray-700/50">
                       <td
-                        className={`p-1 whitespace-nowrap text-sm font-bold text-white ${ITEM_COL_WIDTH}`}
+                        className={`p-1 whitespace-nowrap text-sm font-medium text-white ${ITEM_COL_WIDTH}`}
                       >
                         {item.name}
                       </td>
-                      {isCajasVacias ? (
-                        // Si es cajas vacías, dejamos el resto de la fila principal vacía para poner el desglose debajo
-                        <td
-                          colSpan={INVENTORY_LOCATIONS.length + 4}
-                          className="p-1 border-none"
-                        ></td>
-                      ) : (
-                        // Renderizado normal para otros artículos
-                        <>
-                          <td
-                            className={`p-1 text-center text-xs text-slate-300 ${PRICE_COL_WIDTH}`}
-                          >
-                            {item.pricePerUnitWithoutIVA &&
+
+                      {/* P.U. S/IVA: Vacío si es cajas */}
+                      <td
+                        className={`p-1 text-center text-xs text-slate-300 ${PRICE_COL_WIDTH}`}
+                      >
+                        {isCajasVacias
+                          ? ""
+                          : item.pricePerUnitWithoutIVA &&
                             item.pricePerUnitWithoutIVA > 0.01
-                              ? `${item.pricePerUnitWithoutIVA
-                                  .toFixed(2)
-                                  .replace(".", ",")} €`
-                              : "0,00 €"}
-                          </td>
-                          {INVENTORY_LOCATIONS.map((loc) => (
-                            <td key={loc} className="p-1 text-center w-16">
-                              <div
-                                className={`bg-slate-700 rounded-md p-1 w-10 mx-auto text-sm ${
-                                  item.stockByLocationSnapshot?.[loc] > 0
-                                    ? "text-green-400 font-bold"
-                                    : "text-slate-400"
-                                }`}
-                              >
-                                {item.stockByLocationSnapshot?.[loc]
-                                  ?.toFixed(1)
-                                  .replace(".", ",") || "0"}
-                              </div>
-                            </td>
-                          ))}
-                          <td
-                            className={`p-1 text-center text-sm font-bold ${TOTAL_VALUE_WIDTH}`}
-                          >
-                            <span
-                              className={
-                                totalValue > 0.01
-                                  ? "text-yellow-400"
+                          ? `${item.pricePerUnitWithoutIVA
+                              .toFixed(2)
+                              .replace(".", ",")} €`
+                          : "0,00 €"}
+                      </td>
+
+                      {/* UBICACIONES: Si es cajas vacías, devolvemos null para que no pinte nada */}
+                      {INVENTORY_LOCATIONS.map((loc) => {
+                        if (isCajasVacias) {
+                          return <td key={loc} className="p-1 w-16"></td>;
+                        }
+
+                        const stockValue =
+                          item.stockByLocationSnapshot?.[loc] || 0;
+                        return (
+                          <td key={loc} className="p-1 text-center w-16">
+                            <div
+                              className={`bg-slate-700 rounded-md p-1 w-10 mx-auto text-sm ${
+                                stockValue > 0.001
+                                  ? "text-green-400 font-bold"
                                   : "text-slate-400"
-                              }
+                              }`}
                             >
-                              {totalValue.toFixed(2).replace(".", ",")} €
-                            </span>
+                              {stockValue > 0.001
+                                ? stockValue.toFixed(1).replace(".", ",")
+                                : "0"}
+                            </div>
                           </td>
-                          <td
-                            className={`p-1 text-center text-lg font-bold ${TOTAL_STOCK_WIDTH}`}
-                          >
-                            <span
-                              className={
-                                calculatedTotal > 0.001
-                                  ? "text-green-400"
-                                  : "text-slate-400"
-                              }
-                            >
-                              {calculatedTotal.toFixed(1).replace(".", ",")}
-                            </span>
-                          </td>
-                        </>
-                      )}
+                        );
+                      })}
+
+                      {/* VALOR TOTAL Y TOTAL: Vacíos si es cajas */}
+                      <td
+                        className={`p-1 text-center text-sm font-bold ${TOTAL_VALUE_WIDTH}`}
+                      >
+                        {isCajasVacias
+                          ? ""
+                          : calculateSnapshotTotalValue(item) > 0.01
+                          ? `${calculateSnapshotTotalValue(item)
+                              .toFixed(2)
+                              .replace(".", ",")} €`
+                          : "0,00 €"}
+                      </td>
+
+                      <td
+                        className={`p-1 text-center text-lg font-bold ${TOTAL_STOCK_WIDTH}`}
+                      >
+                        {isCajasVacias
+                          ? ""
+                          : calculatedTotal > 0.001
+                          ? calculatedTotal.toFixed(1).replace(".", ",")
+                          : "0,0"}
+                      </td>
                     </tr>
 
-                    {/* DESGLOSE DE CAJAS VACÍAS (Como en la imagen) */}
+                    {/* DESGLOSE: Formato idéntico a tu calculadora */}
                     {isCajasVacias &&
                       item.details &&
                       Object.entries(item.details)
                         .filter(([_, count]) => Number(count) > 0)
                         .map(([brand, count]) => {
-                          const m = brand === "schweppes" ? 28 : 24;
+                          const multipliers: Record<string, number> = {
+                            schweppes: 28,
+                            cocaCola: 24,
+                            cocaColaZero: 24,
+                            pepsi: 24,
+                            ambar: 24,
+                            moritz: 24,
+                          };
+                          const m = multipliers[brand] || 24;
+                          const cantidad = Number(count);
+                          const total = cantidad * m;
+
                           return (
                             <tr
                               key={brand}
-                              className="bg-slate-900/40 border-l-4 border-violet-500/50"
+                              className="bg-slate-900/40 border-l-2 border-violet-500/50"
                             >
-                              <td className="p-1 pl-10 text-[11px] text-slate-400 font-bold uppercase italic">
-                                <span className="text-slate-600 mr-2">└─</span>{" "}
-                                {brand}
+                              <td
+                                className={`p-1 pl-8 text-xs text-slate-400 font-medium ${ITEM_COL_WIDTH}`}
+                              >
+                                <span className="text-slate-500 mr-2">└─</span>
+                                {brand.toUpperCase()}
                               </td>
+
+                              {/* Ocupamos el hueco de las ubicaciones para el texto del cálculo */}
                               <td
                                 colSpan={INVENTORY_LOCATIONS.length + 2}
-                                className="p-1 text-right pr-10 text-[10px] text-slate-500 italic uppercase font-bold"
+                                className="p-1 text-right pr-6 text-[11px] text-slate-500 italic uppercase"
                               >
-                                {count} CAJAS X {m} UDS =
+                                {cantidad} cajas x {m} uds =
                               </td>
+
                               <td className={TOTAL_VALUE_WIDTH}></td>
+
+                              {/* Resultado final en amarillo */}
                               <td
-                                className={`p-1 text-right pr-6 text-sm font-black text-yellow-400 ${TOTAL_STOCK_WIDTH}`}
+                                className={`p-1 text-right pr-4 text-sm font-bold text-yellow-400 ${TOTAL_STOCK_WIDTH}`}
                               >
-                                {Number(count) * m}
+                                {total}
                               </td>
                             </tr>
                           );
