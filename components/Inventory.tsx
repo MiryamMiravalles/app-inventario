@@ -45,7 +45,7 @@ interface InventoryProps {
 const emptyInventoryItem: Omit<InventoryItem, "id" | "stockByLocation"> = {
   name: "",
   category: "",
-  pricePerUnitWithoutIVA: 0, // MODIFICADO
+  pricePerUnitWithoutIVA: 0,
 };
 
 const emptyPurchaseOrder: Omit<PurchaseOrder, "id"> = {
@@ -923,7 +923,7 @@ const InventoryComponent: React.FC<InventoryProps> = ({
       inventoryItemId: "",
       quantity: 1,
       costAtTimeOfPurchase: 0,
-      pricePerUnitWithoutIVA: 0, // AÑADIDO
+      pricePerUnitWithoutIVA: 0,
     };
     const newIndex = currentPurchaseOrder.items.length;
     setCurrentPurchaseOrder((prev) => {
@@ -1063,9 +1063,9 @@ const InventoryComponent: React.FC<InventoryProps> = ({
           const m = multipliers[brand] || 24;
           recordItems.push({
             itemId: `box-${brand}`,
-            name: `CAJAS ${brand.toUpperCase()} (${cantidad} cxs x ${m})`, // Esto saldrá en la columna Artículo
-            category: "📦 Embalajes",
-            currentStock: cantidad * m, // Esto saldrá en la columna Cantidad
+            name: `CAJAS ${brand.toUpperCase()}`,
+            category: " [📦] Embalajes",
+            currentStock: cantidad * m,
             pendingStock: 0,
             initialStock: cantidad * m,
             endStock: cantidad * m,
@@ -1465,16 +1465,20 @@ const InventoryComponent: React.FC<InventoryProps> = ({
                       <td
                         className={`p-1 text-center text-xs text-slate-300 ${PRICE_COL_WIDTH}`}
                       >
-                        {isCajasVacias
-                          ? ""
-                          : item.pricePerUnitWithoutIVA &&
-                            item.pricePerUnitWithoutIVA > 0.01
-                          ? `${item.pricePerUnitWithoutIVA
-                              .toFixed(2)
-                              .replace(".", ",")} €`
-                          : "0,00 €"}
+                        {item.category.toLowerCase().includes("embalajes") ? (
+                          /* 1. Si es de la categoría Embalajes, ponemos la raya gris */
+                          <span className="text-slate-500">-</span>
+                        ) : item.pricePerUnitWithoutIVA &&
+                          item.pricePerUnitWithoutIVA > 0.01 ? (
+                          /* 2. Si tiene precio (Bebidas), mostramos el precio normal */
+                          `${item.pricePerUnitWithoutIVA
+                            .toFixed(2)
+                            .replace(".", ",")} €`
+                        ) : (
+                          /* 3. Si el precio es 0 pero NO es embalaje (Material), mostramos 0,00 € */
+                          "0,00 €"
+                        )}
                       </td>
-
                       {/* UBICACIONES: Si es cajas vacías, devolvemos null para que no pinte nada */}
                       {INVENTORY_LOCATIONS.map((loc) => {
                         if (isCajasVacias) {
@@ -1487,10 +1491,14 @@ const InventoryComponent: React.FC<InventoryProps> = ({
                           <td key={loc} className="p-1 text-center w-16">
                             {stockValue > 0.001 ? (
                               <div className="bg-slate-700 rounded-md p-1 w-10 mx-auto text-sm text-green-400 font-bold">
+                                {/* 🛑 CAMBIO: Ahora también redondea la columna Almacén si es Embalajes */}
                                 {item.category
                                   .toLowerCase()
-                                  .includes("material")
-                                  ? Math.round(stockValue) // Redondeo para material
+                                  .includes("material") ||
+                                item.category
+                                  .toLowerCase()
+                                  .includes("embalajes")
+                                  ? Math.round(stockValue)
                                   : stockValue.toFixed(1).replace(".", ",")}
                               </div>
                             ) : (
@@ -1519,24 +1527,19 @@ const InventoryComponent: React.FC<InventoryProps> = ({
                         {isCajasVacias ? (
                           ""
                         ) : calculatedTotal > 0.001 ? (
-                          /* Mantenemos el recuadro verde largo (w-20) */
                           <div className="bg-slate-700 rounded-md p-1 px-2 w-20 mx-auto text-lg font-bold text-green-400">
-                            {/* Comprobamos si es la categoría de material. 
-          Si lo es, usamos Math.round para quitar decimales.
-          Si no, mantenemos .toFixed(1) con la coma.
-      */}
-                            {item.category.toLowerCase().includes("material")
+                            {/* 🛑 CAMBIO: Ahora redondea si es Material O si es Embalajes */}
+                            {item.category.toLowerCase().includes("material") ||
+                            item.category.toLowerCase().includes("embalajes")
                               ? Math.round(calculatedTotal)
                               : calculatedTotal.toFixed(1).replace(".", ",")}
                           </div>
                         ) : (
-                          /* Si el stock es 0, mostramos el guion gris */
                           <span className="text-slate-500">-</span>
                         )}
                       </td>
                     </tr>
 
-                    {/* DESGLOSE: Formato idéntico a tu calculadora */}
                     {isCajasVacias &&
                       item.details &&
                       Object.entries(item.details)
