@@ -154,10 +154,17 @@ const CalculatorRow = ({
     </div>
   );
 };
+
 const EmptyBoxesCalculator: React.FC<{
   inventoryItems: InventoryItem[];
   onSaveInventoryItem: (item: InventoryItem) => void;
 }> = ({ inventoryItems, onSaveInventoryItem }) => {
+  // Buscamos el ítem una sola vez
+  const boxesItem = inventoryItems.find((i) =>
+    i.name.toLowerCase().includes("cajas vacias")
+  );
+
+  // Estado local para que los inputs respondan al teclado inmediatamente
   const [boxCounts, setBoxCounts] = useState({
     schweppes: 0,
     cocaCola: 0,
@@ -167,86 +174,79 @@ const EmptyBoxesCalculator: React.FC<{
     moritz: 0,
   });
 
-  // Cálculos individuales con los nombres de campo correctos
-  const calc = {
-    schweppes: boxCounts.schweppes * 28,
-    cocaCola: boxCounts.cocaCola * 24,
-    cocaColaZero: boxCounts.cocaColaZero * 24,
-    pepsi: boxCounts.pepsi * 24,
-    ambar: boxCounts.ambar * 24,
-    moritz: boxCounts.moritz * 24,
+  // Sincronización inicial: Cargar de la DB a la calculadora al abrir la página
+  useEffect(() => {
+    if (boxesItem?.details) {
+      setBoxCounts(boxesItem.details as any);
+    }
+  }, [boxesItem?.id]); // Solo se dispara cuando el ítem carga por primera vez
+
+  const multipliers: Record<string, number> = {
+    schweppes: 28,
+    cocaCola: 24,
+    cocaColaZero: 24,
+    pepsi: 24,
+    ambar: 24,
+    moritz: 24,
   };
 
-  const totalGlobal = Object.values(calc).reduce((a, b) => a + b, 0);
+  const handleInputChange = (field: string, value: string) => {
+    const numValue = value === "" ? 0 : parseInt(value);
+    if (isNaN(numValue)) return;
 
-  const handleApply = () => {
-    const item = inventoryItems.find(
-      (i) => i.name.toLowerCase() === "cajas vacias"
-    );
-    if (item) {
+    const newCounts = { ...boxCounts, [field]: numValue };
+    setBoxCounts(newCounts); // Actualiza la pantalla inmediatamente
+
+    // Calculamos el nuevo total para Almacén
+    const newTotal = Object.entries(newCounts).reduce((acc, [f, v]) => {
+      return acc + Number(v) * (multipliers[f] || 24);
+    }, 0);
+
+    // Guardamos en la base de datos
+    if (boxesItem) {
       onSaveInventoryItem({
-        ...item,
-        stockByLocation: { Almacén: totalGlobal },
+        ...boxesItem,
+        stockByLocation: { ...boxesItem.stockByLocation, Almacén: newTotal },
+        details: newCounts,
       });
-      alert(`Aplicado: ${totalGlobal} unidades.`);
-    } else {
-      alert("Error: No se encontró 'Cajas vacias' en el inventario.");
     }
   };
 
-  // Función Row corregida: cada una apunta a su propio 'field'
-  const Row = ({
-    label,
-    value,
-    field,
-  }: {
-    label: string;
-    value: number;
-    field: keyof typeof boxCounts;
-  }) => (
-    <div className="flex items-center justify-between bg-slate-700/20 p-2 px-3 rounded border border-slate-600/30 text-[13px] mb-1.5">
-      <span className="text-slate-200 font-medium w-24 truncate">{label}</span>
-      <div className="flex items-center gap-3">
-        <input
-          type="number"
-          min="0"
-          placeholder="0"
-          value={boxCounts[field] || ""}
-          onChange={(e) => {
-            const val = e.target.value === "" ? 0 : Number(e.target.value);
-            setBoxCounts({ ...boxCounts, [field]: val });
-          }}
-          className="w-14 bg-slate-800 text-white p-1 rounded border border-slate-600 text-center text-sm focus:ring-1 focus:ring-violet-500 outline-none"
-        />
-        <span className="text-yellow-400 font-bold w-10 text-right">
-          {value}
-        </span>
-      </div>
-    </div>
-  );
+  if (!boxesItem) return null;
 
   return (
-    <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 mt-6 shadow-2xl max-w-[320px] ml-0 border-t-4 border-t-violet-500">
-      <h3 className="text-[14px] font-bold text-white mb-4 flex items-center gap-2 uppercase tracking-wide">
+    <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 mt-6 shadow-2xl max-w-[320px] border-t-4 border-t-violet-500">
+      <h3 className="text-[14px] font-bold text-white mb-4 uppercase tracking-wide">
         📦 Recuento de Cajas
       </h3>
-
-      <div className="flex flex-col mb-4">
-        <Row label="Schweppes" value={calc.schweppes} field="schweppes" />
-        <Row label="Coca Cola" value={calc.cocaCola} field="cocaCola" />
-        <Row
-          label="Coca Cola Zero"
-          value={calc.cocaColaZero}
-          field="cocaColaZero"
-        />
-        <Row label="Pepsi" value={calc.pepsi} field="pepsi" />
-        <Row label="Ambar" value={calc.ambar} field="ambar" />
-        <Row label="Moritz" value={calc.moritz} field="moritz" />
+      <div className="flex flex-col gap-1.5">
+        {Object.entries(multipliers).map(([brand, mult]) => (
+          <div
+            key={brand}
+            className="flex items-center justify-between bg-slate-700/20 p-2 px-3 rounded border border-slate-600/30 text-[13px]"
+          >
+            <span className="text-slate-200 font-medium capitalize">
+              {brand.replace(/([A-Z])/g, " $1")}{" "}
+              <small className="text-[10px] opacity-40">x{mult}</small>
+            </span>
+            <div className="flex items-center gap-3">
+              <input
+                type="number"
+                min="0"
+                value={(boxCounts as any)[brand] || ""}
+                onChange={(e) => handleInputChange(brand, e.target.value)}
+                className="w-14 bg-slate-900 text-white p-1 rounded border border-slate-600 text-center text-sm focus:ring-2 focus:ring-violet-500 outline-none"
+              />
+              <span className="text-yellow-400 font-bold w-10 text-right">
+                {((boxCounts as any)[brand] || 0) * mult}
+              </span>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
 };
-
 const CategoryAccordion: React.FC<CategoryAccordionProps> = ({
   title,
   children,
@@ -1028,24 +1028,15 @@ const InventoryComponent: React.FC<InventoryProps> = ({
 
     const recordItems: InventoryRecordItem[] = inventoryItems.map((item) => {
       const totalStock = calculateTotalStock(item);
-      const pendingStock = stockInOrders[item.id] || 0;
-
-      const previousEndStock = initialStockMap.get(item.id) || 0;
-      const initialTotalStock = previousEndStock + pendingStock;
-
-      const endStock = totalStock;
-      const consumption = initialTotalStock - endStock;
-
       return {
         itemId: item.id,
         name: item.name,
-        category: item.category, // Aseguramos la categoría
+        category: item.category,
         currentStock: totalStock,
-        pendingStock: pendingStock,
-        initialStock: initialTotalStock,
-        endStock: endStock,
-        consumption: consumption,
-        pricePerUnitWithoutIVA: item.pricePerUnitWithoutIVA, // AÑADIDO
+        // ... resto de campos
+        details: item.details, // 🛑 AÑADE ESTA LÍNEA
+        stockByLocationSnapshot: item.stockByLocation || {},
+        pricePerUnitWithoutIVA: item.pricePerUnitWithoutIVA,
       };
     });
 
@@ -1111,22 +1102,20 @@ const InventoryComponent: React.FC<InventoryProps> = ({
     if (!viewingRecord || !Array.isArray(viewingRecord.items)) return null;
 
     const isAnalysis = viewingRecord.type === "analysis";
-
     const recordItems = viewingRecord.items as InventoryRecordItem[];
 
     // NEW LOGIC: Type, Mapping, Filtering, Grouping, Sorting
-    // Tipo auxiliar para incluir la categoría del item actual
     type DetailedInventoryRecordItem = InventoryRecordItem & {
       category: string;
     };
 
     const itemsWithCategory: DetailedInventoryRecordItem[] = recordItems.map(
       (recordItem) => {
-        // Usar inventoryItems prop para encontrar la categoría
         const inventoryItem = inventoryItems.find(
           (i) => i.id === recordItem.itemId
         );
-        const category = inventoryItem?.category || "Uncategorized";
+        const category =
+          inventoryItem?.category || recordItem.category || "Uncategorized";
         return { ...recordItem, category };
       }
     );
@@ -1313,9 +1302,7 @@ const InventoryComponent: React.FC<InventoryProps> = ({
     };
 
     // MODIFIED: Acepta ítems ya filtrados para la categoría
-    // MODIFIED: Acepta ítems ya filtrados para la categoría
     const renderSnapshotTable = (items: DetailedInventoryRecordItem[]) => {
-      // 🛑 DEFINICIÓN LOCAL DE HELPERS PARA OPERAR SOBRE InventoryRecordItem
       const calculateSnapshotTotalStock = (
         item: DetailedInventoryRecordItem
       ): number => {
@@ -1329,28 +1316,21 @@ const InventoryComponent: React.FC<InventoryProps> = ({
         item: DetailedInventoryRecordItem
       ): number => {
         const totalStock = calculateSnapshotTotalStock(item);
-        // Usamos el precio almacenado en el registro del historial (pricePerUnitWithoutIVA)
         return (Number(item.pricePerUnitWithoutIVA) || 0) * totalStock;
       };
-      // 🛑 FIN DE DEFINICIÓN LOCAL
 
-      const itemsWithTotals = items // Usar los ítems ya agrupados
+      const itemsWithTotals = items
         .map((item) => ({
           ...item,
-          // 🛑 Uso la función de cálculo LOCAL definida arriba
           calculatedTotal: calculateSnapshotTotalStock(item),
         }))
-        .filter((item) => item.calculatedTotal > 0.001);
+        .filter((item) => {
+          const isCajasVacias = item.name
+            .toLowerCase()
+            .includes("cajas vacias");
+          return isCajasVacias || item.calculatedTotal > 0.001;
+        });
 
-      if (itemsWithTotals.length === 0) {
-        return (
-          <div className="text-center py-5 text-slate-500">
-            <p>No se registraron artículos en stock en esta categoría.</p>
-          </div>
-        );
-      }
-
-      // Definición de anchos de columna para Snapshot
       const ITEM_COL_WIDTH = "min-w-[120px]";
       const PRICE_COL_WIDTH = "min-w-[80px] w-20";
       const TOTAL_VALUE_WIDTH = "min-w-[96px] w-24";
@@ -1358,39 +1338,32 @@ const InventoryComponent: React.FC<InventoryProps> = ({
 
       return (
         <div className="overflow-x-auto">
-          {/* 🛑 table-fixed para controlar anchos */}
           <table className="divide-y divide-gray-700 table-fixed min-w-full">
             <thead className="bg-gray-700/50">
               <tr>
-                {/* ARTÍCULO */}
                 <th
-                  className={`p-1 text-left text-xs font-medium text-gray-300 uppercase ${ITEM_COL_WIDTH} whitespace-nowrap overflow-hidden text-ellipsis`}
+                  className={`p-1 text-left text-xs font-medium text-gray-300 uppercase ${ITEM_COL_WIDTH}`}
                 >
                   ARTÍCULO
                 </th>
-                {/* P.U. S/IVA */}
                 <th
                   className={`p-1 text-center text-xs font-medium text-gray-300 uppercase ${PRICE_COL_WIDTH}`}
                 >
                   P.U. S/IVA
                 </th>
-                {/* UBICACIONES */}
                 {INVENTORY_LOCATIONS.map((loc) => (
                   <th
                     key={loc}
-                    className={`p-1 text-center text-xs font-medium text-gray-300 uppercase w-16 whitespace-nowrap overflow-hidden text-ellipsis`}
-                    title={loc}
+                    className="p-1 text-center text-xs font-medium text-gray-300 uppercase w-16"
                   >
                     {loc.toUpperCase()}
                   </th>
                 ))}
-                {/* 🛑 VALOR TOTAL (Monetario) */}
                 <th
                   className={`p-1 text-center text-xs font-medium text-gray-300 uppercase ${TOTAL_VALUE_WIDTH}`}
                 >
                   VALOR TOTAL
                 </th>
-                {/* 🛑 TOTAL (Unidades) */}
                 <th
                   className={`p-1 text-center text-xs font-medium text-gray-300 uppercase ${TOTAL_STOCK_WIDTH}`}
                 >
@@ -1400,94 +1373,116 @@ const InventoryComponent: React.FC<InventoryProps> = ({
             </thead>
             <tbody className="bg-gray-800 divide-y divide-gray-700">
               {itemsWithTotals.map((item, itemIndex) => {
-                // 🛑 Uso las funciones de cálculo LOCALES
-                const calculatedTotal = item.calculatedTotal || 0; // Unidades Totales
-                const totalValue = calculateSnapshotTotalValue(item); // Valor Monetario Total
+                const isCajasVacias = item.name
+                  .toLowerCase()
+                  .includes("cajas vacias");
+                const calculatedTotal = item.calculatedTotal || 0;
+                const totalValue = calculateSnapshotTotalValue(item);
 
                 return (
-                  <tr
-                    key={item.itemId || itemIndex}
-                    className="hover:bg-gray-700/50"
-                  >
-                    {/* ARTÍCULO DATA */}
-                    <td
-                      className={`p-1 whitespace-nowrap text-sm font-medium text-white ${ITEM_COL_WIDTH}`}
-                    >
-                      {item.name}
-                    </td>
-                    {/* P.U. S/IVA DATA */}
-                    <td
-                      className={`p-1 text-center whitespace-nowrap text-xs text-slate-300 ${PRICE_COL_WIDTH}`}
-                    >
-                      {item.pricePerUnitWithoutIVA &&
-                      item.pricePerUnitWithoutIVA > 0.01
-                        ? item.pricePerUnitWithoutIVA
-                            .toFixed(2)
-                            .replace(".", ",") + " €"
-                        : "0,00 €"}
-                    </td>
-                    {/* UBICACIONES DATA (Solo lectura) */}
-                    {INVENTORY_LOCATIONS.map((loc) => {
-                      const stockValue =
-                        item.stockByLocationSnapshot?.[loc] || 0;
-                      return (
+                  <React.Fragment key={item.itemId || itemIndex}>
+                    <tr className="hover:bg-gray-700/50">
+                      <td
+                        className={`p-1 whitespace-nowrap text-sm font-bold text-white ${ITEM_COL_WIDTH}`}
+                      >
+                        {item.name}
+                      </td>
+                      {isCajasVacias ? (
+                        // Si es cajas vacías, dejamos el resto de la fila principal vacía para poner el desglose debajo
                         <td
-                          key={loc}
-                          className="p-1 whitespace-nowrap text-center w-16"
-                        >
-                          {/* Stock por ubicación */}
-                          <div
-                            className={`
-                                                bg-slate-700 rounded-md p-1 w-10 text-center mx-auto 
-                                                ${
-                                                  stockValue > 0.001
-                                                    ? "text-green-400 font-bold text-sm"
-                                                    : "text-slate-400 text-sm"
-                                                }
-                                            `}
+                          colSpan={INVENTORY_LOCATIONS.length + 4}
+                          className="p-1 border-none"
+                        ></td>
+                      ) : (
+                        // Renderizado normal para otros artículos
+                        <>
+                          <td
+                            className={`p-1 text-center text-xs text-slate-300 ${PRICE_COL_WIDTH}`}
                           >
-                            {stockValue > 0.001
-                              ? stockValue.toFixed(1).replace(".", ",")
-                              : "0"}
-                          </div>
-                        </td>
-                      );
-                    })}
+                            {item.pricePerUnitWithoutIVA &&
+                            item.pricePerUnitWithoutIVA > 0.01
+                              ? `${item.pricePerUnitWithoutIVA
+                                  .toFixed(2)
+                                  .replace(".", ",")} €`
+                              : "0,00 €"}
+                          </td>
+                          {INVENTORY_LOCATIONS.map((loc) => (
+                            <td key={loc} className="p-1 text-center w-16">
+                              <div
+                                className={`bg-slate-700 rounded-md p-1 w-10 mx-auto text-sm ${
+                                  item.stockByLocationSnapshot?.[loc] > 0
+                                    ? "text-green-400 font-bold"
+                                    : "text-slate-400"
+                                }`}
+                              >
+                                {item.stockByLocationSnapshot?.[loc]
+                                  ?.toFixed(1)
+                                  .replace(".", ",") || "0"}
+                              </div>
+                            </td>
+                          ))}
+                          <td
+                            className={`p-1 text-center text-sm font-bold ${TOTAL_VALUE_WIDTH}`}
+                          >
+                            <span
+                              className={
+                                totalValue > 0.01
+                                  ? "text-yellow-400"
+                                  : "text-slate-400"
+                              }
+                            >
+                              {totalValue.toFixed(2).replace(".", ",")} €
+                            </span>
+                          </td>
+                          <td
+                            className={`p-1 text-center text-lg font-bold ${TOTAL_STOCK_WIDTH}`}
+                          >
+                            <span
+                              className={
+                                calculatedTotal > 0.001
+                                  ? "text-green-400"
+                                  : "text-slate-400"
+                              }
+                            >
+                              {calculatedTotal.toFixed(1).replace(".", ",")}
+                            </span>
+                          </td>
+                        </>
+                      )}
+                    </tr>
 
-                    {/* 🛑 VALOR TOTAL DATA (Monetario) */}
-                    <td
-                      className={`p-1 text-center whitespace-nowrap text-sm font-bold ${TOTAL_VALUE_WIDTH}`}
-                    >
-                      <span
-                        className={
-                          totalValue > 0.01
-                            ? "text-yellow-400"
-                            : "text-slate-400"
-                        }
-                      >
-                        {totalValue > 0.01
-                          ? `${totalValue.toFixed(2).replace(".", ",")} €`
-                          : "0,00 €"}
-                      </span>
-                    </td>
-
-                    {/* 🛑 TOTAL DATA (Unidades) */}
-                    <td
-                      className={`p-1 text-center whitespace-nowrap text-lg font-bold ${TOTAL_STOCK_WIDTH}`}
-                    >
-                      <span
-                        className={
-                          calculatedTotal > 0.001
-                            ? "text-green-400"
-                            : "text-slate-400"
-                        }
-                      >
-                        {calculatedTotal > 0.001
-                          ? calculatedTotal.toFixed(1).replace(".", ",")
-                          : "0,0"}
-                      </span>
-                    </td>
-                  </tr>
+                    {/* DESGLOSE DE CAJAS VACÍAS (Como en la imagen) */}
+                    {isCajasVacias &&
+                      item.details &&
+                      Object.entries(item.details)
+                        .filter(([_, count]) => Number(count) > 0)
+                        .map(([brand, count]) => {
+                          const m = brand === "schweppes" ? 28 : 24;
+                          return (
+                            <tr
+                              key={brand}
+                              className="bg-slate-900/40 border-l-4 border-violet-500/50"
+                            >
+                              <td className="p-1 pl-10 text-[11px] text-slate-400 font-bold uppercase italic">
+                                <span className="text-slate-600 mr-2">└─</span>{" "}
+                                {brand}
+                              </td>
+                              <td
+                                colSpan={INVENTORY_LOCATIONS.length + 2}
+                                className="p-1 text-right pr-10 text-[10px] text-slate-500 italic uppercase font-bold"
+                              >
+                                {count} CAJAS X {m} UDS =
+                              </td>
+                              <td className={TOTAL_VALUE_WIDTH}></td>
+                              <td
+                                className={`p-1 text-right pr-6 text-sm font-black text-yellow-400 ${TOTAL_STOCK_WIDTH}`}
+                              >
+                                {Number(count) * m}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                  </React.Fragment>
                 );
               })}
             </tbody>

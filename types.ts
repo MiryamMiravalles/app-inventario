@@ -43,6 +43,7 @@ export interface InventoryRecordItem {
   consumption?: number;
   stockByLocationSnapshot?: { [key: string]: number };
   pricePerUnitWithoutIVA?: number;
+  details?: Record<string, number>;
 }
 
 export interface OrderItem {
