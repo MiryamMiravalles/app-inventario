@@ -1892,12 +1892,17 @@ const InventoryComponent: React.FC<InventoryProps> = ({
       </div>
     );
   };
-
   return (
     <div className="p-4 animate-fade-in">
       {activeTab === "inventory" && (
         <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row justify-start sm:justify-between items-start sm:items-center mb-4 gap-2">
+          {/* 🛑 SECCIÓN 2: Barra de Herramientas fija debajo de la Navegación */}
+          <div
+            className="flex flex-col sm:flex-row justify-start sm:justify-between items-start sm:items-center mb-4 gap-2 
+                     sticky top-16 z-50 bg-slate-900 py-3 -mx-4 px-4 border-b border-slate-700/50 shadow-lg"
+          >
+            {/* top-16 es la clave: pega esta barra justo debajo de los 64px de la cabecera principal */}
+
             <div className="flex w-full gap-2 flex-wrap sm:justify-start">
               <div className="relative w-7/12 max-w-none sm:w-56 order-1">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">

@@ -2017,50 +2017,43 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-900 flex flex-col">
-      {/* 1. Contenedor Sticky Superior (Título y Pestañas) */}
-      <nav className="bg-slate-900/80 backdrop-blur-sm shadow-lg sticky top-0 z-30 border-b border-slate-800">
-        {" "}
+      {/* 🛑 SECCIÓN 1: Cabecera Principal (Altura: 64px) */}
+      <header className="sticky top-0 z-[60] bg-slate-900 border-b border-slate-800 shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col">
-            {/* Fila del Título y Hamburguesa */}
-            <div className="flex items-center justify-between h-16">
-              <div className="flex-shrink-0 text-violet-400 font-bold text-xl">
-                Control de Stock y Pedidos
-              </div>
-
-              {/* 🛑 BOTÓN DE HAMBURGUESA PARA MÓVIL (VISIBLE SOLO EN PANTALLAS PEQUEÑAS) */}
-              <div className="-mr-2 flex md:hidden">
+          <div className="flex items-center justify-between h-16">
+            {" "}
+            {/* h-16 = 64px */}
+            <div className="flex-shrink-0 text-violet-400 font-bold text-xl">
+              Control de Stock y Pedidos
+            </div>
+            <div className="-mr-2 flex md:hidden">
+              <button
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                type="button"
+                className="bg-slate-800 inline-flex items-center justify-center p-2 rounded-md text-slate-400 hover:text-white"
+              >
+                <span className="sr-only">Open main menu</span>
+                {isMenuOpen ? <XIcon /> : <MenuIcon />}
+              </button>
+            </div>
+            <div className="hidden md:flex items-baseline space-x-4">
+              {navItemsFull.map((item) => (
                 <button
-                  onClick={() => setIsMenuOpen(!isMenuOpen)}
-                  type="button"
-                  className="bg-slate-800 inline-flex items-center justify-center p-2 rounded-md text-slate-400 hover:text-white hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-white"
-                  aria-controls="mobile-menu"
-                  aria-expanded="false"
+                  key={item.id}
+                  onClick={() => setActiveView(item.id)}
+                  className={navClasses(item.id)}
                 >
-                  <span className="sr-only">Open main menu</span>
-                  {isMenuOpen ? <XIcon /> : <MenuIcon />}
+                  {item.label}
                 </button>
-              </div>
-
-              {/* PESTAÑAS VISIBLES EN DESKTOP (md:block) */}
-              <div className="hidden md:flex items-baseline space-x-4">
-                {navItemsFull.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => setActiveView(item.id)}
-                    className={navClasses(item.id)}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
+              ))}
             </div>
           </div>
         </div>
-        {/* 🛑 MENÚ DESPLEGABLE MÓVIL (Muestra las pestañas verticalmente) */}
+
+        {/* Menú móvil */}
         {isMenuOpen && (
-          <div className="md:hidden" id="mobile-menu">
-            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+          <div className="md:hidden bg-slate-900 border-t border-slate-800">
+            <div className="px-2 pt-2 pb-3 space-y-1">
               {navItemsFull.map((item) => (
                 <button
                   key={item.id}
@@ -2076,13 +2069,10 @@ const App: React.FC = () => {
             </div>
           </div>
         )}
-      </nav>
+      </header>
 
-      {/* 2. Contenido Principal */}
-      <main className="flex-grow pt-4">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {renderContent()}
-        </div>
+      <main className="flex-grow">
+        <div className="max-w-7xl mx-auto">{renderContent()}</div>
       </main>
 
       <footer className="bg-slate-900 text-center py-6 text-slate-500 text-sm border-t border-slate-800">
