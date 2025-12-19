@@ -507,7 +507,7 @@ const InventoryComponent: React.FC<InventoryProps> = ({
   const [viewingRecord, setViewingRecord] = useState<InventoryRecord | null>(
     null
   );
-
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedLocationColumn, setSelectedLocationColumn] = useState<
     string | "all"
   >("all");
@@ -1176,7 +1176,7 @@ const InventoryComponent: React.FC<InventoryProps> = ({
   };
 
   const renderStats = () => {
-    // 1. Procesamos los datos por CATEGORÍA
+    // 1. Procesamos los datos por CATEGORÍA (para los gráficos de arriba)
     const categoryData = analysisGroupedItems
       .filter((group) => !group.category.toLowerCase().includes("embalajes"))
       .map(({ category, items }) => {
@@ -1193,14 +1193,42 @@ const InventoryComponent: React.FC<InventoryProps> = ({
           );
         }, 0);
         const cleanName = category.split(" ").slice(1).join(" ") || category;
-        return { name: cleanName, gasto: parseFloat(gastoTotal.toFixed(2)) };
+        return {
+          name: cleanName,
+          fullName: category,
+          gasto: parseFloat(gastoTotal.toFixed(2)),
+        };
       })
       .filter((d) => d.gasto > 0)
       .sort((a, b) => b.gasto - a.gasto);
 
-    // 2. Procesamos los datos por PRODUCTO (Top 10)
+    // 2. LÓGICA DEL TOP 5 PRODUCTOS (Global o por Categoría seleccionada)
+    const top5Products = inventoryItems
+      .filter((item) => !item.category.toLowerCase().includes("embalajes"))
+      .filter((item) => !selectedCategory || item.category === selectedCategory)
+      .map((item) => {
+        const consumption =
+          (initialStockMap.get(item.id) || 0) +
+          (stockInOrders[item.id] || 0) -
+          calculateTotalStock(item);
+        const gasto =
+          consumption > 0
+            ? consumption * (item.pricePerUnitWithoutIVA || 0)
+            : 0;
+        return {
+          name: item.name,
+          gasto: parseFloat(gasto.toFixed(2)),
+          category: item.category,
+        };
+      })
+      .filter((d) => d.gasto > 0)
+      .sort((a, b) => b.gasto - a.gasto)
+      .slice(0, 5);
+
+    // 3. Datos para el gráfico detallado inferior
     const productData = inventoryItems
       .filter((item) => !item.category.toLowerCase().includes("embalajes"))
+      .filter((item) => !selectedCategory || item.category === selectedCategory)
       .map((item) => {
         const consumption =
           (initialStockMap.get(item.id) || 0) +
@@ -1212,9 +1240,9 @@ const InventoryComponent: React.FC<InventoryProps> = ({
             : 0;
         return { name: item.name, gasto: parseFloat(gasto.toFixed(2)) };
       })
-      .filter((d) => d.gasto > 0.5) // Solo productos con gasto relevante
+      .filter((d) => d.gasto > 0.1)
       .sort((a, b) => b.gasto - a.gasto)
-      .slice(0, 10); // Tomamos los 10 primeros
+      .slice(0, 15);
 
     const COLORS = [
       "#5c31c0ff",
@@ -1230,12 +1258,17 @@ const InventoryComponent: React.FC<InventoryProps> = ({
         {/* FILA 1: RESUMEN POR CATEGORÍA */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl">
-            <h3 className="text-white font-bold mb-6 flex items-center gap-2">
-              <span className="p-2 bg-violet-500/20 rounded-lg text-violet-400">
-                📊
-              </span>
-              Gasto por Categoría
-            </h3>
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-white font-bold flex items-center gap-2">
+                <span className="p-2 bg-violet-500/20 rounded-lg text-violet-400 text-lg">
+                  📊
+                </span>
+                Gasto por Categoría
+              </h3>
+              <p className="text-[10px] text-slate-500 italic">
+                Haz clic en una barra para filtrar
+              </p>
+            </div>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={categoryData}>
@@ -1247,27 +1280,42 @@ const InventoryComponent: React.FC<InventoryProps> = ({
                   <XAxis
                     dataKey="name"
                     stroke="#94a3b8"
-                    fontSize={11}
-                    tickLine={false}
-                    axisLine={false}
+                    fontSize={10}
+                    interval={0}
+                    angle={-20}
+                    textAnchor="end"
+                    height={50}
                   />
                   <YAxis
                     stroke="#94a3b8"
                     fontSize={11}
-                    tickLine={false}
-                    axisLine={false}
                     tickFormatter={(v) => `${v}€`}
                   />
                   <Tooltip
+                    cursor={{ fill: "#334155", opacity: 0.4 }}
                     contentStyle={{
                       backgroundColor: "#1e293b",
                       border: "none",
                       borderRadius: "12px",
                     }}
                   />
-                  <Bar dataKey="gasto" radius={[4, 4, 0, 0]}>
-                    {categoryData.map((_, i) => (
-                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                  <Bar
+                    dataKey="gasto"
+                    radius={[4, 4, 0, 0]}
+                    cursor="pointer"
+                    // 🛑 EVENTO CLIC: Selecciona la categoría para filtrar el siguiente gráfico
+                    onClick={(data) => setSelectedCategory(data.fullName)}
+                  >
+                    {categoryData.map((entry, i) => (
+                      <Cell
+                        key={i}
+                        fill={
+                          entry.fullName === selectedCategory
+                            ? "#fff"
+                            : COLORS[i % COLORS.length]
+                        }
+                        className="transition-all duration-300"
+                      />
                     ))}
                   </Bar>
                 </BarChart>
@@ -1275,12 +1323,12 @@ const InventoryComponent: React.FC<InventoryProps> = ({
             </div>
           </div>
 
-          <div className="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl">
+          <div className="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl relative">
             <h3 className="text-white font-bold mb-6 flex items-center gap-2">
-              <span className="p-2 bg-emerald-500/20 rounded-lg text-emerald-400">
+              <span className="p-2 bg-emerald-500/20 rounded-lg text-emerald-400 text-lg">
                 💰
               </span>
-              Distribución del Gasto (%)
+              Distribución del Gasto
             </h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
@@ -1311,20 +1359,40 @@ const InventoryComponent: React.FC<InventoryProps> = ({
           </div>
         </div>
 
-        {/* FILA 2: TOP PRODUCTOS (NUEVO) */}
-        <div className="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl">
-          <h3 className="text-white font-bold mb-6 flex items-center gap-2">
-            <span className="p-2 bg-amber-500/20 rounded-lg text-amber-400">
-              🏆
-            </span>
-            Top 10 Productos con Mayor Gasto
-          </h3>
-          <div className="h-[400px]">
+        {/* FILA 2: PRODUCTOS (CON FILTRO ACTIVO) */}
+        <div className="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl border-t-4 border-t-indigo-500">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+            <div>
+              <h3 className="text-white font-bold text-lg flex items-center gap-2">
+                <span className="p-2 bg-indigo-500/20 rounded-lg text-indigo-400">
+                  🏆
+                </span>
+                {selectedCategory
+                  ? `Productos en: ${selectedCategory.split(" ")[1]}`
+                  : "Top Productos Globales"}
+              </h3>
+              <p className="text-xs text-slate-500 mt-1">
+                Gasto real basado en consumo y precio s/IVA
+              </p>
+            </div>
+
+            {/* Botón para resetear el filtro */}
+            {selectedCategory && (
+              <button
+                onClick={() => setSelectedCategory(null)}
+                className="bg-slate-700 hover:bg-slate-600 text-white text-xs py-1.5 px-4 rounded-full transition-colors flex items-center gap-2 border border-slate-600"
+              >
+                <span>✕</span> Ver todos los productos
+              </button>
+            )}
+          </div>
+
+          <div className="h-[450px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={productData}
                 layout="vertical"
-                margin={{ left: 40, right: 30 }}
+                margin={{ left: 30, right: 40 }}
               >
                 <CartesianGrid
                   strokeDasharray="3 3"
@@ -1342,8 +1410,8 @@ const InventoryComponent: React.FC<InventoryProps> = ({
                   dataKey="name"
                   type="category"
                   stroke="#fff"
-                  fontSize={11}
-                  width={120}
+                  fontSize={10}
+                  width={130}
                 />
                 <Tooltip
                   cursor={{ fill: "#334155", opacity: 0.4 }}
@@ -1352,11 +1420,24 @@ const InventoryComponent: React.FC<InventoryProps> = ({
                     border: "none",
                     borderRadius: "12px",
                   }}
-                  formatter={(v: number) => [`${v} €`, "Gasto Total"]}
+                  formatter={(v: number) => [`${v} €`, "Gasto"]}
                 />
-                <Bar dataKey="gasto" radius={[0, 4, 4, 0]} barSize={20}>
+                <Bar
+                  dataKey="gasto"
+                  radius={[0, 4, 4, 0]}
+                  barSize={selectedCategory ? 30 : 20}
+                >
                   {productData.map((_, i) => (
-                    <Cell key={i} fill={i < 3 ? "#fbbf24" : "#6366f1"} />
+                    <Cell
+                      key={i}
+                      fill={
+                        selectedCategory
+                          ? "#6366f1"
+                          : i < 3
+                          ? "#fbbf24"
+                          : "#4f46e5"
+                      }
+                    />
                   ))}
                 </Bar>
               </BarChart>
