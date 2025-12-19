@@ -1773,49 +1773,26 @@ const App: React.FC = () => {
     [addOrUpdate]
   );
 
-  // 🛑 RE-AÑADIDO: API Handler para Descargar un Registro (Mantenido, funciona correctamente)
   const handleDownloadHistoryRecord = async (id: string, label: string) => {
     try {
-      // 1. Llamar a la API para obtener la respuesta (Response)
       const response = await api.history.download(id);
+      if (!response.ok) throw new Error("Error al descargar");
 
-      if (!response.ok) {
-        // Esto captura el 404 de la función Netlify si el ID no existe
-        let errorMessage = response.statusText;
-        try {
-          const errorBody = await response.json();
-          errorMessage = errorBody.error || errorBody.message || errorMessage;
-        } catch (e) {
-          // Ignorar si el cuerpo no es JSON (ej. cuerpo vacío)
-        }
-        throw new Error(`Error al descargar: ${errorMessage}`);
-      }
-
-      // 2. Obtener el contenido como Blob (datos binarios)
       const blob = await response.blob();
-
-      // 3. Crear un enlace temporal para forzar la descarga en el navegador
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
 
-      // Configurar el nombre del archivo
-      a.download = `${label.replace(/ /g, "_")}_${
-        new Date().toISOString().split("T")[0]
-      }.csv`;
+      // Añadimos la fecha actual al nombre para que sea único
+      const timestamp = new Date().toISOString().split("T")[0];
+      a.download = `${label.replace(/ /g, "_")}_${timestamp}.csv`;
       a.href = url;
 
-      // 4. Simular un clic y limpiar
       document.body.appendChild(a);
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
-
-      console.log(`Archivo ${label} descargado correctamente.`);
     } catch (error) {
-      console.error("Fallo al generar o descargar el archivo:", error);
-      alert(
-        `No se pudo descargar el archivo. Error: ${(error as Error).message}`
-      );
+      alert(`No se pudo descargar: ${(error as Error).message}`);
     }
   };
 

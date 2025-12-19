@@ -67,49 +67,44 @@ const sortItems = (items: InventoryRecordItem[]): InventoryRecordItem[] => {
 // Función para convertir el array de items de registro a formato CSV
 const convertToCsv = (record: InventoryRecordDocument): string => {
   const isAnalysis = record.type === "analysis";
-
   let csv = "";
-  const separator = ";"; // 🛑 USAMOS EL ORDENAMIENTO REQUERIDO
+  const separator = ";";
 
   const sortedItems = sortItems(record.items);
   let lastCategory = "";
 
   if (isAnalysis) {
-    // === Lógica para Análisis (Consumo) - PRECIO EXCLUIDO ===
-    // 🛑 CORREGIDO: Eliminada la columna P.U. s/IVA de la cabecera
+    // === Lógica para Análisis (Consumo) ===
     const headerRow = `Articulo${separator}Stock Actual${separator}En Pedidos${separator}Stock Inicial Total${separator}Consumo\n`;
     csv += headerRow;
 
     sortedItems.forEach((item) => {
-      // 🛑 INYECCIÓN DE CABECERA DE CATEGORÍA
       if (item.category && item.category !== lastCategory) {
-        csv += `\n"${item.category}"\n`; // Fila de Categoría Separada
+        csv += `\n"${item.category}"\n`;
         lastCategory = item.category;
       }
 
       const currentStock =
         item.currentStock !== undefined
-          ? Number(item.currentStock).toFixed(2).replace(".", ",")
-          : "0,00";
+          ? Number(item.currentStock).toFixed(1).replace(".", ",")
+          : "0,0";
       const pendingStock =
         item.pendingStock !== undefined
-          ? Number(item.pendingStock).toFixed(2).replace(".", ",")
-          : "0,00";
+          ? Number(item.pendingStock).toFixed(1).replace(".", ",")
+          : "0,0";
       const initialTotalStock =
         item.initialStock !== undefined
-          ? Number(item.initialStock).toFixed(2).replace(".", ",")
-          : "0,00";
+          ? Number(item.initialStock).toFixed(1).replace(".", ",")
+          : "0,0";
       const consumption =
         item.consumption !== undefined
-          ? Number(item.consumption).toFixed(2).replace(".", ",")
-          : "0,00"; // 🛑 ELIMINADA la declaración de la variable 'price' que no se usa. // 🛑 CORREGIDO: Fila de Datos SIN la columna 'price'. // Antes: csv += `"${item.name}"${separator}${price}${separator}${currentStock}${separator}${pendingStock}${separator}${initialTotalStock}${separator}${consumption}\n`;
+          ? Number(item.consumption).toFixed(1).replace(".", ",")
+          : "0,0";
 
       csv += `"${item.name}"${separator}${currentStock}${separator}${pendingStock}${separator}${initialTotalStock}${separator}${consumption}\n`;
     });
   } else {
-    // === Lógica para Snapshot (Inventario) - (Se mantiene con precio) ===
-
-    // ORDEN FIJO DE UBICACIONES
+    // === Lógica para Snapshot (Inventario por Ubicación) ===
     const REQUESTED_LOCATIONS = [
       "Rest",
       "Nevera",
@@ -122,66 +117,78 @@ const convertToCsv = (record: InventoryRecordDocument): string => {
       "B4",
       "Ofice B4",
       "Almacén",
-    ]; // Recoger todas las ubicaciones que tienen stock en el registro
-
+    ];
     const allLocations = new Set<string>();
     record.items.forEach((item) => {
       Object.keys(item.stockByLocationSnapshot || {}).forEach((loc) =>
         allLocations.add(loc)
       );
-    }); // Crear la lista de ubicaciones a mostrar, respetando el orden fijo
+    });
 
     const locations = REQUESTED_LOCATIONS.filter((loc) =>
       allLocations.has(loc)
-    ); // Encabezados para Snapshot (Inventario por Ubicación)
+    );
 
     let header = "Articulo";
-    header += `${separator}P.U. s/IVA`; // 🛑 CORRECCIÓN: AÑADIDO: Columna Valor Total en el encabezado
+    header += `${separator}P.U. s/IVA`;
     header += `${separator}VALOR TOTAL`;
     locations.forEach((loc) => {
       header += `${separator}${loc.toUpperCase()}`;
     });
     header += `${separator}Total\n`;
-    csv += header; // Añadir encabezado solo una vez
+    csv += header;
 
     sortedItems.forEach((item) => {
-      // 🛑 INYECCIÓN DE CABECERA DE CATEGORÍA
       if (item.category && item.category !== lastCategory) {
         csv += `\n"${item.category}"\n`;
         lastCategory = item.category;
-      } // CÁLCULO DEL STOCK TOTAL
+      }
 
+      const isEmbalaje = item.category.toLowerCase().includes("embalajes");
       const totalStock = Object.values(
         item.stockByLocationSnapshot || {}
-      ).reduce((sum: number, val: any) => sum + (Number(val) || 0), 0); // Precio
-
-      const price =
-        item.pricePerUnitWithoutIVA !== undefined
-          ? Number(item.pricePerUnitWithoutIVA)
-          : 0; // 🛑 CORRECCIÓN: CÁLCULO DEL VALOR TOTAL
-
+      ).reduce((sum: number, val: any) => sum + (Number(val) || 0), 0);
+      const price = Number(item.pricePerUnitWithoutIVA) || 0;
       const totalValue = price * totalStock;
 
-      let priceFormatted = Number(price).toFixed(2).replace(".", ",");
-      let totalValueFormatted = Number(totalValue).toFixed(2).replace(".", ","); // Fila de Datos del Artículo
+      // 🛑 LÓGICA DE FORMATEO ACTUALIZADA:
+      let priceFormatted: string;
+      let totalValueFormatted: string;
 
-      let row = `"${item.name}"${separator}${priceFormatted}`; // 🛑 CORRECCIÓN: AÑADIDO: Valor Total
+      if (isEmbalaje) {
+        // Para Embalajes: Ambos campos muestran un guion "-"
+        priceFormatted = "-";
+        totalValueFormatted = "-";
+      } else {
+        // Para el resto (Material, Bebidas): Mantiene el formato con símbolo €
+        priceFormatted = `${price.toFixed(2).replace(".", ",")} €`;
+        totalValueFormatted = `${totalValue.toFixed(2).replace(".", ",")} €`;
+      }
 
-      row += `${separator}${totalValueFormatted}`; // Iterar sobre la lista de ubicaciones FIJAS
+      // Montamos la fila protegiendo los textos con comillas
+      let row = `"${item.name}"${separator}"${priceFormatted}"${separator}"${totalValueFormatted}"`;
 
       locations.forEach((loc) => {
         const rawStock = item.stockByLocationSnapshot?.[loc];
-        const stock =
+        // En embalajes usamos números enteros sin decimales
+        const stockStr =
           rawStock !== undefined
-            ? Number(rawStock).toFixed(2).replace(".", ",")
-            : "0,00";
-        row += `${separator}${stock}`;
-      }); // Añadir el Total (stock) al final
+            ? isEmbalaje
+              ? Math.round(Number(rawStock)).toString()
+              : Number(rawStock).toFixed(1).replace(".", ",")
+            : "0";
+        row += `${separator}${stockStr}`;
+      });
 
-      row += `${separator}${Number(totalStock).toFixed(2).replace(".", ",")}\n`;
+      // Stock Total al final de la fila
+      const totalStockFinal = isEmbalaje
+        ? Math.round(totalStock).toString()
+        : totalStock.toFixed(1).replace(".", ",");
+      row += `${separator}${totalStockFinal}\n`;
+
       csv += row;
     });
-  } // Añadir BOM (Byte Order Mark)
+  }
 
   return "\ufeff" + csv;
 };
