@@ -8,6 +8,7 @@ import {
   InventoryRecordItem,
 } from "../types";
 import Modal from "./Modal";
+import { api } from "../src/api/index";
 import {
   PlusIcon,
   PencilIcon,
@@ -460,7 +461,29 @@ const WeeklyConsumptionAnalysis: React.FC<WeeklyConsumptionAnalysisProps> = ({
     </div>
   );
 };
+const compressImage = (base64Str: string): Promise<string> => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.src = "data:image/jpeg;base64," + base64Str;
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const MAX_WIDTH = 1200; // Resolución suficiente para que la IA lea texto
+      let width = img.width;
+      let height = img.height;
 
+      if (width > MAX_WIDTH) {
+        height *= MAX_WIDTH / width;
+        width = MAX_WIDTH;
+      }
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      ctx?.drawImage(img, 0, 0, width, height);
+      // Reducimos calidad al 70% para que pese muy poco y no de Timeout
+      resolve(canvas.toDataURL("image/jpeg", 0.7).split(",")[1]);
+    };
+  });
+};
 const InventoryComponent: React.FC<InventoryProps> = ({
   inventoryItems,
   purchaseOrders,
@@ -511,6 +534,54 @@ const InventoryComponent: React.FC<InventoryProps> = ({
   const [selectedLocationColumn, setSelectedLocationColumn] = useState<
     string | "all"
   >("all");
+  const handleCaptureOrder = async (base64Data: string) => {
+    try {
+      // 1. Preparamos los nombres para ayudar a la IA a identificar tus productos
+      const inventoryNames = inventoryItems.map((item) => item.name);
+
+      // 2. Llamada a la API
+      const data = await api.ai.processOrder(base64Data, inventoryNames);
+
+      if (!data.items || data.items.length === 0) {
+        alert("Gemini no encontró productos en la imagen.");
+        return;
+      }
+
+      // 3. Emparejamiento (Match) de los productos detectados con tu inventario
+      const matchedItems = data.items
+        .map((detected: any) => {
+          const found = inventoryItems.find((i) =>
+            i.name
+              .toLowerCase()
+              .trim()
+              .includes(detected.name.toLowerCase().trim())
+          );
+
+          if (found) {
+            return {
+              inventoryItemId: found.id,
+              quantity: Number(detected.quantity) || 0,
+              costAtTimeOfPurchase: 0,
+              pricePerUnitWithoutIVA: found.pricePerUnitWithoutIVA || 0,
+            };
+          }
+          return null;
+        })
+        .filter(Boolean);
+
+      // 4. Abrimos el modal con los datos
+      openOrderModal({
+        orderDate: new Date().toISOString().split("T")[0],
+        supplierName: "Escaneado con Gemini",
+        items: matchedItems,
+        status: PurchaseOrderStatus.Pending,
+        totalAmount: 0,
+      } as PurchaseOrder);
+    } catch (e: any) {
+      console.error("Error completo:", e);
+      alert("Error de conexión con el servidor: " + e.message);
+    }
+  };
 
   const calculateTotalStock = (item: InventoryItem) => {
     if (!item.stockByLocation) return 0;
@@ -1981,168 +2052,177 @@ const InventoryComponent: React.FC<InventoryProps> = ({
     }
 
     return (
-      <div className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <input
-            type="date"
-            value={currentPurchaseOrder.orderDate}
-            onChange={(e) => handleOrderChange("orderDate", e.target.value)}
-            className="bg-gray-700 text-white rounded p-2 w-full"
-          />
-          <div className="relative">
+      /* Contenedor principal con flex-col y altura máxima para forzar el scroll interno */
+      <div className="flex flex-col max-h-[80vh] space-y-4">
+        {/* SECCIÓN FIJA SUPERIOR: Fecha, Proveedor y Buscador */}
+        <div className="flex-shrink-0 space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <input
-              type="text"
-              list="supplier-list"
-              placeholder="Proveedor"
-              value={currentPurchaseOrder.supplierName}
-              onChange={(e) =>
-                handleOrderChange("supplierName", e.target.value)
-              }
-              className="bg-gray-700/50 text-white rounded p-2 w-full"
+              type="date"
+              value={currentPurchaseOrder.orderDate}
+              onChange={(e) => handleOrderChange("orderDate", e.target.value)}
+              className="bg-gray-700 text-white rounded p-2 w-full border border-gray-600 focus:ring-2 focus:ring-indigo-500"
             />
-            <datalist id="supplier-list">
-              {suppliers.map((s) => (
-                <option key={s} value={s} />
-              ))}
-            </datalist>
-          </div>
-        </div>
-        <h3 className="text-lg font-bold text-white pt-4">
-          Artículos del Pedido
-        </h3>
-        <div className="relative mb-4">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-            <SearchIcon />
-          </div>
-          <input
-            type="text"
-            placeholder="Buscar producto para añadir..."
-            value={orderSearchTerm}
-            onChange={(e) => setOrderSearchTerm(e.target.value)}
-            className="bg-gray-700 text-white rounded-lg pl-10 pr-4 py-2 w-full border border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder-gray-400"
-          />
-        </div>
-        {orderSearchTerm && filteredOrderItems.length > 0 && (
-          <div className="bg-slate-900/50 rounded-md p-2 space-y-1">
-            {filteredOrderItems.slice(0, 5).map((item) => {
-              const isAlreadyInOrder = currentPurchaseOrder.items.some(
-                (oi) => oi.inventoryItemId === item.id
-              );
-
-              return (
-                <div
-                  key={item.id}
-                  className={`flex justify-between items-center p-2 rounded-sm ${
-                    isAlreadyInOrder
-                      ? "opacity-50 cursor-not-allowed"
-                      : "hover:bg-slate-700/50"
-                  }`}
-                >
-                  <span className="text-white text-sm">{item.name}</span>
-                  <button
-                    onClick={() => handleAddProductFromSearch(item)}
-                    className={`p-1 rounded text-white text-xs flex items-center gap-1 ${
-                      isAlreadyInOrder
-                        ? "bg-gray-500 cursor-not-allowed"
-                        : "bg-green-600 hover:bg-green-700"
-                    }`}
-                    disabled={isAlreadyInOrder}
-                  >
-                    {isAlreadyInOrder ? "Añadido" : "✅ Añadir"}
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        )}
-        {currentPurchaseOrder.items.map((orderItem, index) => {
-          const itemDetails = inventoryItems.find(
-            (item) => item.id === orderItem.inventoryItemId
-          ); // Artículos disponibles para el select (no deben estar ya en el pedido)
-          const availableItems = inventoryItems.filter(
-            (item) =>
-              !currentPurchaseOrder.items.some(
-                (oi, i) => i !== index && oi.inventoryItemId === item.id
-              )
-          );
-
-          return (
-            <div
-              key={index}
-              className="flex gap-2 items-center p-2 bg-gray-900/50 rounded-md"
-            >
-              {orderItem.inventoryItemId && itemDetails ? (
-                <span className="text-white w-1/3 flex-shrink-0">
-                  {itemDetails.name}
-                </span>
-              ) : (
-                <select
-                  value={orderItem.inventoryItemId}
-                  onChange={(e) =>
-                    handleOrderItemChange(
-                      index,
-                      "inventoryItemId",
-                      e.target.value
-                    )
-                  }
-                  className="bg-gray-700 text-white rounded p-2 flex-grow"
-                >
-                  <option value="">Seleccionar Artículo</option>
-                  {availableItems.map((i) => (
-                    <option key={i.id} value={i.id}>
-                      {i.name}
-                    </option>
-                  ))}
-                </select>
-              )}
+            <div className="relative">
               <input
                 type="text"
-                placeholder="Cantidad"
-                value={tempOrderQuantities[index] ?? ""}
+                list="supplier-list"
+                placeholder="Proveedor"
+                value={currentPurchaseOrder.supplierName}
                 onChange={(e) =>
-                  handleOrderQuantityChange(index, e.target.value)
+                  handleOrderChange("supplierName", e.target.value)
                 }
-                className="bg-gray-700 text-white rounded p-2 w-24"
+                className="bg-gray-700/50 text-white rounded p-2 w-full border border-gray-600 focus:ring-2 focus:ring-indigo-500"
               />
-              <div className="relative w-28 invisible">
+              <datalist id="supplier-list">
+                {suppliers.map((s) => (
+                  <option key={s} value={s} />
+                ))}
+              </datalist>
+            </div>
+          </div>
+
+          <h3 className="text-lg font-bold text-white pt-2 border-b border-gray-700 pb-2">
+            Artículos del Pedido
+          </h3>
+
+          {/* Campo de búsqueda de productos */}
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+              <SearchIcon className="h-4 w-4" />
+            </div>
+            <input
+              type="text"
+              placeholder="Buscar producto para añadir..."
+              value={orderSearchTerm}
+              onChange={(e) => setOrderSearchTerm(e.target.value)}
+              className="bg-gray-700 text-white rounded-lg pl-10 pr-4 py-2 w-full border border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder-gray-400"
+            />
+          </div>
+
+          {/* Resultados de búsqueda (Sugestiones) */}
+          {orderSearchTerm && filteredOrderItems.length > 0 && (
+            <div className="bg-slate-900/90 rounded-md p-2 space-y-1 border border-indigo-500/30 max-h-40 overflow-y-auto">
+              {filteredOrderItems.slice(0, 5).map((item) => {
+                const isAlreadyInOrder = currentPurchaseOrder.items.some(
+                  (oi) => oi.inventoryItemId === item.id
+                );
+
+                return (
+                  <div
+                    key={item.id}
+                    className={`flex justify-between items-center p-2 rounded-sm ${
+                      isAlreadyInOrder
+                        ? "opacity-50 cursor-not-allowed"
+                        : "hover:bg-slate-700/50"
+                    }`}
+                  >
+                    <span className="text-white text-sm">{item.name}</span>
+                    <button
+                      onClick={() => handleAddProductFromSearch(item)}
+                      className={`px-2 py-1 rounded text-white text-xs flex items-center gap-1 ${
+                        isAlreadyInOrder
+                          ? "bg-gray-500 cursor-not-allowed"
+                          : "bg-green-600 hover:bg-green-700"
+                      }`}
+                      disabled={isAlreadyInOrder}
+                    >
+                      {isAlreadyInOrder ? "Añadido" : "✅ Añadir"}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* 🛑 SECCIÓN DINÁMICA CON SCROLL: Lista de ítems añadidos */}
+        <div
+          className="flex-grow overflow-y-auto pr-2 space-y-2 custom-scrollbar"
+          style={{ minHeight: "150px" }}
+        >
+          {currentPurchaseOrder.items.map((orderItem, index) => {
+            const itemDetails = inventoryItems.find(
+              (item) => item.id === orderItem.inventoryItemId
+            );
+            const availableItems = inventoryItems.filter(
+              (item) =>
+                !currentPurchaseOrder.items.some(
+                  (oi, i) => i !== index && oi.inventoryItemId === item.id
+                )
+            );
+
+            return (
+              <div
+                key={index}
+                className="flex gap-2 items-center p-3 bg-gray-900/50 rounded-lg border border-gray-800"
+              >
+                {orderItem.inventoryItemId && itemDetails ? (
+                  <span className="text-white flex-grow font-medium truncate">
+                    {itemDetails.name}
+                  </span>
+                ) : (
+                  <select
+                    value={orderItem.inventoryItemId}
+                    onChange={(e) =>
+                      handleOrderItemChange(
+                        index,
+                        "inventoryItemId",
+                        e.target.value
+                      )
+                    }
+                    className="bg-gray-700 text-white rounded p-2 flex-grow border border-gray-600"
+                  >
+                    <option value="">Seleccionar Artículo</option>
+                    {availableItems.map((i) => (
+                      <option key={i.id} value={i.id}>
+                        {i.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
                 <input
                   type="text"
-                  disabled
-                  className="bg-gray-700 text-white rounded p-2 w-full pr-8"
-                  value={"0,00"}
+                  placeholder="Cant."
+                  value={tempOrderQuantities[index] ?? ""}
+                  onChange={(e) =>
+                    handleOrderQuantityChange(index, e.target.value)
+                  }
+                  className="bg-gray-700 text-white rounded p-2 w-20 text-center border border-gray-600"
                 />
-                <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 pointer-events-none">
-                  €
-                </span>
+                <button
+                  onClick={() => removeOrderItem(index)}
+                  className="p-2 bg-red-600/20 text-red-500 hover:bg-red-600 hover:text-white rounded-md transition-colors"
+                >
+                  <TrashIcon className="h-4 w-4" />
+                </button>
               </div>
-              <button
-                onClick={() => removeOrderItem(index)}
-                className="p-1 bg-red-600 rounded text-white h-7 w-7 flex items-center justify-center"
-              >
-                <TrashIcon className="h-4 w-4" />
-              </button>
-            </div>
-          );
-        })}
-        <button
-          onClick={addOrderItem}
-          className="text-indigo-400 hover:text-indigo-300 text-xs font-medium mt-1"
-        >
-          + Añadir Artículo (manualmente)
-        </button>
-        <div className="flex justify-end p-4 border-t border-gray-700 rounded-b-lg mt-4 bg-gray-800">
+            );
+          })}
+
+          {/* Botón para añadir manualmente al final de la lista de scroll */}
+          <button
+            onClick={addOrderItem}
+            className="w-full py-2 border-2 border-dashed border-gray-700 rounded-lg text-indigo-400 hover:text-indigo-300 hover:border-indigo-500/50 text-xs font-medium transition-colors"
+          >
+            + Añadir Artículo (manualmente)
+          </button>
+        </div>
+
+        {/* SECCIÓN FIJA INFERIOR: Acciones principales */}
+        <div className="flex-shrink-0 flex justify-end p-4 border-t border-gray-700 mt-2 bg-gray-800 rounded-b-lg">
           <button
             onClick={closeOrderModal}
-            className="bg-gray-600 hover:bg-gray-700 text-white font-medium py-1.5 px-3.5 rounded-lg mr-2 text-sm transition duration-300"
+            className="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg mr-2 text-sm transition duration-300"
           >
             Cancelar
           </button>
           <button
             onClick={handleSaveOrder}
             disabled={!canSave}
-            className={`font-medium py-1.5 px-3.5 rounded-lg text-sm transition duration-300 ${
+            className={`font-medium py-2 px-6 rounded-lg text-sm transition duration-300 ${
               canSave
-                ? "bg-indigo-600 hover:bg-indigo-700 text-white"
+                ? "bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20"
                 : "bg-slate-700 text-slate-500 cursor-not-allowed"
             }`}
             title={disabledTitle}
@@ -2452,98 +2532,97 @@ const InventoryComponent: React.FC<InventoryProps> = ({
       {activeTab === "orders" && (
         <div>
                     {/* Contenedor que alinea el botón a la derecha */}       
-          <div className="flex justify-end mb-4">
-                     
+          <div className="flex justify-end mb-4 gap-3">
+                     {/* 📸 INPUT DE CÁMARA (Oculto) */}
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              id="camera-order-input"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  const reader = new FileReader();
+                  reader.onloadend = async () => {
+                    const rawBase64 = (reader.result as string).split(",")[1];
+                    try {
+                      const compressedBase64 = await compressImage(rawBase64);
+                      handleCaptureOrder(compressedBase64);
+                    } catch (error) {
+                      console.error("Error al comprimir:", error);
+                      handleCaptureOrder(rawBase64);
+                    }
+                  };
+                  reader.readAsDataURL(file);
+                }
+              }}
+            />
+            {/* 📸 BOTÓN VISUAL PARA FOTO ALBARÁN */}
+            <label
+              htmlFor="camera-order-input"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-1 px-3 rounded-lg flex items-center justify-center gap-2 text-sm transition duration-300 h-7 cursor-pointer"
+              title="Escanear albarán con Gemini"
+            >
+              <span className="text-base">📷</span>
+              <span className="hidden sm:inline">Foto Pedido</span>
+            </label>
+            {/* BOTÓN NUEVO PEDIDO MANUAL */}
             <button
               onClick={() => openOrderModal()}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-1 px-2 rounded-lg flex items-center justify-center gap-2 text-sm transition duration-300 h-7"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-1 px-3 rounded-lg flex items-center justify-center gap-2 text-sm transition duration-300 h-7"
               title="Nuevo Pedido"
             >
-                            <PlusIcon className="h-4 w-4" />           
-              <span>Nuevo Pedido</span>         
+              <PlusIcon className="h-4 w-4" />
+              <span>Nuevo Pedido</span>
             </button>
-                   
           </div>
-                 
-          {/* 🛑 INICIO: Vista de ESCRITORIO (Tabla tradicional, visible en sm: y superior) */}
-                 
+          {/* 🛑 INICIO: Vista de ESCRITORIO (Tabla tradicional) */}
           <div className="bg-gray-800 shadow-xl rounded-lg overflow-x-auto hidden sm:block">
-                     
             <table className="min-w-full divide-y divide-gray-700">
-                         
               <thead className="bg-gray-700/50">
-                             
                 <tr>
-                                 
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase">
-                                        Fecha Pedido                
+                    Fecha Pedido
                   </th>
-                                 
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase">
-                                        Proveedor                
+                    Proveedor
                   </th>
-                                 
-                  {/* 🛑 AÑADIDO: Total Pedido (Entre Proveedor y Estado) */}   
-                             
                   <th className="px-6 py-3 text-center text-xs font-medium text-gray-300 uppercase">
-                                        Total Pedido                
+                    Total Pedido
                   </th>
-                                 
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase">
-                                        &nbsp;&nbsp;&nbsp;Estado                
+                    &nbsp;&nbsp;&nbsp;Estado
                   </th>
-                                 
                   <th className="px-6 py-3 text-center text-xs font-medium text-gray-300 uppercase">
-                                        Completado                
+                    Completado
                   </th>
-                                 
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-300 uppercase">
-                                        Acciones                
+                    Acciones
                   </th>
-                               
                 </tr>
-                           
               </thead>
-                         
               <tbody className="bg-gray-800 divide-y divide-gray-700">
-                             
                 {purchaseOrders.map((order) => {
-                  // 🛑 LLAMADA A LA FUNCIÓN GLOBAL (CORREGIDO)
                   const totalAmount = calculateOrderTotal(
                     order,
                     inventoryItems
                   );
-
                   return (
                     <tr key={order.id} className="hover:bg-gray-700/50">
-                                         
-                      {/* Columna Fecha Pedido: Agregamos align-middle */}     
-                                   
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300 align-middle">
-                                                {order.orderDate}               
-                           
+                        {order.orderDate}
                       </td>
-                                         
-                      {/* Columna Proveedor: Agregamos align-middle */}         
-                               
                       <td className="px-6 py-4 whitespace-nowrap text-left text-sm font-medium text-white">
-                                                {order.supplierName}           
-                               
+                        {order.supplierName}
                       </td>
-                      {/* 🛑 NUEVA CELDA: TOTAL PEDIDO */}
                       <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-bold text-yellow-400">
                         {totalAmount > 0
                           ? `${totalAmount.toFixed(2).replace(".", ",")} €`
                           : "0,00 €"}
                       </td>
-                                         
-                      {/* Columna Estado: Usamos flex para centrar verticalmente el chip */}
-                                         
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300 align-middle text-center">
-                        {" "}
-                                             
                         <div className="flex items-center h-full">
-                                                 
                           <span
                             className={`px-3 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full ${
                               order.status === PurchaseOrderStatus.Completed ||
@@ -2552,27 +2631,18 @@ const InventoryComponent: React.FC<InventoryProps> = ({
                                 : "bg-yellow-500/20 text-yellow-400"
                             }`}
                           >
-                                                        {order.status}         
-                                         
+                            {order.status}
                           </span>
-                                               
                         </div>
-                                           
                       </td>
-                                         
-                      {/* Columna Completado: Usamos flex para centrar vertical y horizontalmente */}
-                                         
                       <td className="px-6 py-4 whitespace-nowrap text-center text-sm align-middle">
-                                             
                         <div className="flex items-center justify-center h-full">
-                                                 
                           {order.status === PurchaseOrderStatus.Pending && (
                             <button
                               onClick={() => handleReceiveOrder(order)}
                               className="px-1.5 py-0.5 bg-green-600/30 text-green-400 hover:bg-green-600 hover:text-white rounded-xl text-xs font-medium transition duration-300"
                             >
-                                                            Recibir            
-                                           
+                              Recibir
                             </button>
                           )}
                                                  

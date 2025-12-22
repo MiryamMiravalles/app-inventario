@@ -2,11 +2,14 @@
   command = "npm run build"
   publish = "dist"
 
+[functions."process-order-gemini"]
+  timeout = 60
+
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"
 
-# CORRECCIÓN CLAVE para Netlify: Mapea /api/* a /.netlify/functions/*
+
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
