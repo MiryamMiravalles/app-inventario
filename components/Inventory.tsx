@@ -86,7 +86,18 @@ const parseCurrency = (input: string): number => {
   const number = parseFloat(sanitized);
   return isNaN(number) ? 0 : number;
 };
-
+const formatToTitleCase = (str: string): string => {
+  if (!str) return "";
+  return str
+    .toLowerCase()
+    .split(" ")
+    .map((word) => {
+      // Opcional: Mantener SL o SA siempre en mayúsculas
+      if (word === "sl" || word === "sa") return word.toUpperCase();
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    })
+    .join(" ");
+};
 const CATEGORY_ORDER = [
   "🧊 Vodka",
   "🥥 Ron",
@@ -536,7 +547,16 @@ const InventoryComponent: React.FC<InventoryProps> = ({
   const [selectedLocationColumn, setSelectedLocationColumn] = useState<
     string | "all"
   >("all");
+  // Localiza donde se recibe el nombre del proveedor de la foto
+  const processOcrResult = (detectedSupplier: string) => {
+    // Aplicamos el formato: "vins avinyo" -> "Vins Avinyo"
+    const formattedSupplier = formatToTitleCase(detectedSupplier);
 
+    setCurrentPurchaseOrder((prev) => ({
+      ...prev,
+      supplierName: formattedSupplier, // Ahora se guarda ya formateado
+    }));
+  };
   // 1. La función principal corregida
   const handleCaptureOrder = async (base64Data: string) => {
     try {
@@ -583,10 +603,13 @@ const InventoryComponent: React.FC<InventoryProps> = ({
 
       // Mantenemos el total exacto del papel
       const totalPapel = cleanNumber(data.totalAmount);
+      const rawSupplier = data.supplierName || "Vins Avinyó";
+      const formattedSupplier = formatToTitleCase(rawSupplier);
 
+      // 3. Abrimos el modal con los datos ya limpios
       openOrderModal({
         orderDate: data.orderDate || new Date().toISOString().split("T")[0],
-        supplierName: data.supplierName || "VINS AVINYÓ",
+        supplierName: formattedSupplier, // 👈 Aquí pasamos el nombre corregido
         items: matchedItems,
         status: PurchaseOrderStatus.Pending,
         totalAmount: totalPapel,
@@ -2086,9 +2109,11 @@ const InventoryComponent: React.FC<InventoryProps> = ({
               type="text"
               placeholder="Proveedor"
               value={currentPurchaseOrder.supplierName}
-              onChange={(e) =>
-                handleOrderChange("supplierName", e.target.value)
-              }
+              onChange={(e) => {
+                // 💡 Formateamos el texto en tiempo real
+                const formatted = formatToTitleCase(e.target.value);
+                handleOrderChange("supplierName", formatted);
+              }}
               className="bg-gray-700 text-white rounded p-2 w-full border border-gray-600 focus:ring-2 focus:ring-indigo-500"
             />
           </div>
