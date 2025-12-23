@@ -521,7 +521,9 @@ const InventoryComponent: React.FC<InventoryProps> = ({
   const [tempStockValues, setTempStockValues] = useState<
     Record<string, string>
   >({});
-
+  const [tempOrderPrices, setTempOrderPrices] = useState<
+    Record<number, string>
+  >({});
   const [analysisDate, setAnalysisDate] = useState("");
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -916,28 +918,18 @@ const InventoryComponent: React.FC<InventoryProps> = ({
   };
 
   const handleSaveOrder = () => {
-    const hasItems = currentPurchaseOrder.items.length > 0;
-    const allItemsAreValid = currentPurchaseOrder.items.every(
-      (item) => item.quantity > 0.001 && item.inventoryItemId.trim() !== ""
-    );
-
-    if (
-      !currentPurchaseOrder.supplierName.trim() ||
-      !hasItems ||
-      !allItemsAreValid
-    ) {
-      alert(
-        "Revisa el proveedor y que todos los artículos tengan cantidad y nombre."
-      );
+    if (!currentPurchaseOrder.supplierName.trim()) {
+      alert("Introduce el nombre del proveedor.");
       return;
     }
 
-    // Sincronización de precios con 5 decimales
+    // 🛑 Sincronizar precios con el Inventario General
     currentPurchaseOrder.items.forEach((orderItem) => {
       const originalItem = inventoryItems.find(
         (i) => i.id === orderItem.inventoryItemId
       );
       if (originalItem && orderItem.pricePerUnitWithoutIVA > 0) {
+        // Actualizamos el objeto userPrices global y llamamos al guardado persistente
         userPrices[originalItem.name] = orderItem.pricePerUnitWithoutIVA;
         onSaveInventoryItem({
           ...originalItem,
@@ -946,27 +938,22 @@ const InventoryComponent: React.FC<InventoryProps> = ({
       }
     });
 
-    // 2. Calcular total del pedido redondeado
     const calculatedTotalRaw = currentPurchaseOrder.items.reduce(
       (acc, i) => acc + i.quantity * i.pricePerUnitWithoutIVA,
       0
     );
 
-    const orderToSave: PurchaseOrder = {
+    onSavePurchaseOrder({
       ...currentPurchaseOrder,
       id: (currentPurchaseOrder as PurchaseOrder).id || crypto.randomUUID(),
-      status:
-        (currentPurchaseOrder as PurchaseOrder).status ||
-        PurchaseOrderStatus.Pending,
-      // 🛑 FORZAMOS EL REDONDEO AQUÍ ANTES DE GUARDAR
+      status: PurchaseOrderStatus.Pending,
+      // Redondeamos el total final a 2 decimales para contabilidad
       totalAmount: Number(calculatedTotalRaw.toFixed(2)),
-    } as PurchaseOrder;
+    } as PurchaseOrder);
 
-    onSavePurchaseOrder(orderToSave);
-    alert("Pedido guardado con el total redondeado correctamente.");
+    alert("Pedido guardado. Los precios se han actualizado en el inventario.");
     closeOrderModal();
   };
-
   const handleReceiveOrder = (order: PurchaseOrder) => {
     if (
       order.status === PurchaseOrderStatus.Completed ||
@@ -1005,21 +992,32 @@ const InventoryComponent: React.FC<InventoryProps> = ({
 
     if (isAlreadyInOrder) return;
 
+    // Extraemos el precio del artículo seleccionado
+    const dbPrice = item.pricePerUnitWithoutIVA || 0;
+
     const newItem: OrderItem = {
       inventoryItemId: item.id,
       quantity: 1,
       costAtTimeOfPurchase: 0,
-      pricePerUnitWithoutIVA: item.pricePerUnitWithoutIVA || 0, // AÑADIDO
+      pricePerUnitWithoutIVA: dbPrice,
     };
 
     setCurrentPurchaseOrder((prev) => {
       const newItemsList = [...prev.items, newItem];
       const newIndex = newItemsList.length - 1;
 
+      // 1. Sincronizamos cantidad visual
       setTempOrderQuantities((prevTemp) => ({
         ...prevTemp,
         [newIndex]: "1",
       }));
+
+      // 2. Sincronizamos precio visual (Cargamos el de la DB)
+      setTempOrderPrices((prevPrices) => ({
+        ...prevPrices,
+        [newIndex]: dbPrice > 0 ? String(dbPrice).replace(".", ",") : "0,00",
+      }));
+
       return { ...prev, items: newItemsList };
     });
 
@@ -1063,22 +1061,20 @@ const InventoryComponent: React.FC<InventoryProps> = ({
   };
 
   const handleOrderQuantityChange = (index: number, value: string) => {
-    if (value === "" || /^\d*([,.]\d*)?$/.test(value)) {
-      // 2. Guardamos el TEXTO tal cual en el estado temporal (para que no borre la coma)
-      setTempOrderQuantities((prev) => ({ ...prev, [index]: value }));
+    // Guardamos el texto (permite escribir "0," sin borrarlo)
+    setTempOrderQuantities((prev) => ({ ...prev, [index]: value }));
 
-      // 3. Convertimos a número para el cálculo interno, pero SOLO si es un valor válido
-      // Reemplazamos coma por punto para que parseFloat funcione
-      const numericValue = parseFloat(value.replace(",", ".")) || 0;
+    // Convertimos a número solo para el cálculo interno
+    const parsedQuantity = parseFloat(value.replace(",", ".")) || 0;
 
-      setCurrentPurchaseOrder((prev) => {
-        const newItems = [...prev.items];
-        if (newItems[index]) {
-          newItems[index].quantity = numericValue;
-        }
-        return { ...prev, items: newItems };
-      });
-    }
+    setCurrentPurchaseOrder((prev) => {
+      const newItems = [...prev.items];
+      if (newItems[index]) {
+        // 🛑 Usamos parsedQuantity para la lógica del pedido
+        newItems[index].quantity = parsedQuantity;
+      }
+      return { ...prev, items: newItems };
+    });
   };
 
   const handleOrderItemChange = (
@@ -2147,6 +2143,7 @@ const InventoryComponent: React.FC<InventoryProps> = ({
         </div>
 
         {/* LISTA DE ARTÍCULOS EDITABLE */}
+        {/* LISTA DE ARTÍCULOS EDITABLE */}
         <div className="flex-grow overflow-y-auto pr-2 space-y-2 border-t border-gray-700 pt-4 custom-scrollbar">
           {currentPurchaseOrder.items.map((orderItem, index) => {
             const itemDetails = inventoryItems.find(
@@ -2158,7 +2155,8 @@ const InventoryComponent: React.FC<InventoryProps> = ({
                 key={index}
                 className="grid grid-cols-12 gap-2 items-center p-2 bg-gray-900/50 rounded-lg border border-gray-800"
               >
-                <div className="col-span-5">
+                {/* ARTÍCULO: Ocupa 8 columnas ahora para rellenar el hueco */}
+                <div className="col-span-8">
                   {!orderItem.inventoryItemId ? (
                     <select
                       value={orderItem.inventoryItemId}
@@ -2190,66 +2188,24 @@ const InventoryComponent: React.FC<InventoryProps> = ({
                   )}
                 </div>
 
-                {/* 🛑 CANTIDAD CORREGIDA: Permite escribir "0,2" libremente */}
-                <div className="col-span-3">
-                  <input
-                    type="text"
-                    placeholder="Cant."
-                    // Usamos el estado temporal de texto
-                    value={tempOrderQuantities[index] ?? ""}
-                    onChange={(e) => {
-                      const val = e.target.value;
-
-                      // Permitimos: cadena vacía, números, y una sola coma o punto
-                      // Esta expresión regular permite escribir "0," sin borrarlo
-                      if (val === "" || /^\d*([,.]\d*)?$/.test(val)) {
-                        handleOrderQuantityChange(index, val);
-                      }
-                    }}
-                    // Esto asegura que el teclado numérico en móviles permita la coma
-                    inputMode="decimal"
-                    className="bg-gray-800 text-white rounded p-1.5 w-full text-center text-xs border border-gray-700 focus:ring-1 focus:ring-indigo-500 outline-none"
-                  />
-                </div>
-
+                {/* CANTIDAD: Ocupa 3 columnas */}
                 <div className="col-span-3">
                   <input
                     type="text"
                     placeholder="P.U. Neto"
-                    value={
-                      orderItem.pricePerUnitWithoutIVA === 0
-                        ? ""
-                        : String(orderItem.pricePerUnitWithoutIVA).replace(
-                            ".",
-                            ","
-                          )
-                    }
+                    value={tempOrderQuantities[index] ?? ""}
                     onChange={(e) => {
-                      const inputValue = e.target.value;
-                      if (inputValue === "") {
-                        const newItems = [...currentPurchaseOrder.items];
-                        newItems[index].pricePerUnitWithoutIVA = 0;
-                        setCurrentPurchaseOrder((prev) => ({
-                          ...prev,
-                          items: newItems,
-                        }));
-                        return;
-                      }
-                      const normalizedValue = inputValue.replace(",", ".");
-                      if (/^\d*\.?\d{0,5}$/.test(normalizedValue)) {
-                        const newItems = [...currentPurchaseOrder.items];
-                        newItems[index].pricePerUnitWithoutIVA =
-                          parseFloat(normalizedValue) || 0;
-                        setCurrentPurchaseOrder((prev) => ({
-                          ...prev,
-                          items: newItems,
-                        }));
+                      const val = e.target.value;
+                      if (val === "" || /^\d*([,.]\d*)?$/.test(val)) {
+                        handleOrderQuantityChange(index, val);
                       }
                     }}
-                    className="bg-gray-800 text-yellow-400 rounded p-1.5 w-full text-center text-xs border border-gray-700 font-bold focus:ring-1 focus:ring-yellow-500 outline-none"
+                    inputMode="decimal"
+                    className="bg-gray-800 text-yellow-400 rounded p-1.5 w-full text-center text-xs border border-gray-700 focus:ring-1 focus:ring-indigo-500 outline-none"
                   />
                 </div>
 
+                {/* BOTÓN ELIMINAR: Ocupa 1 columna */}
                 <button
                   onClick={() => removeOrderItem(index)}
                   className="col-span-1 text-red-500 flex justify-center"
@@ -2257,9 +2213,9 @@ const InventoryComponent: React.FC<InventoryProps> = ({
                   <TrashIcon className="h-4 w-4" />
                 </button>
               </div>
-            );
-          })}
-
+            ); // Cierre del return
+          })}{" "}
+          {/* Cierre del .map */}
           <button
             onClick={addOrderItem}
             className="w-full py-2 border-2 border-dashed border-gray-700 rounded-lg text-indigo-400 text-xs mt-2 font-bold"
