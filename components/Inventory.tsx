@@ -197,7 +197,7 @@ const EmptyBoxesCalculator: React.FC<{
   inventoryItems: InventoryItem[];
   onSaveInventoryItem: (item: InventoryItem) => void;
 }> = ({ inventoryItems, onSaveInventoryItem }) => {
-  // Inicialización desde localStorage para persistencia
+  // Mantenemos tu lógica de carga desde localStorage
   const [boxCounts, setBoxCounts] = useState<BoxCounts>(() => {
     const saved = localStorage.getItem("boxCounts_persistence");
     return saved
@@ -212,7 +212,17 @@ const EmptyBoxesCalculator: React.FC<{
         };
   });
 
-  // Guardar en localStorage cada vez que cambie un valor
+  // 🛑 IMPORTANTE: Este Effect asegura que si los datos en localStorage
+  // cambian (vía Reset), la calculadora se ponga a cero visualmente.
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const saved = localStorage.getItem("boxCounts_persistence");
+      if (saved) setBoxCounts(JSON.parse(saved));
+    };
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
+
   useEffect(() => {
     localStorage.setItem("boxCounts_persistence", JSON.stringify(boxCounts));
   }, [boxCounts]);
