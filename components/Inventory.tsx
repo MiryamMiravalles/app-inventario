@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import {
   InventoryItem,
   PurchaseOrder,
@@ -54,6 +54,8 @@ interface InventoryProps {
   formatUTCToLocal: (utcDateString: string | Date | undefined) => string;
   handleResetInventoryStocks: () => void;
 }
+
+import { Html5QrcodeScanner, Html5Qrcode } from "html5-qrcode";
 
 const emptyInventoryItem: Omit<InventoryItem, "id" | "stockByLocation"> = {
   name: "",
@@ -483,6 +485,7 @@ const WeeklyConsumptionAnalysis: React.FC<WeeklyConsumptionAnalysisProps> = ({
     </div>
   );
 };
+
 const compressImage = (base64Str: string): Promise<string> => {
   return new Promise((resolve) => {
     const img = new Image();
@@ -506,6 +509,7 @@ const compressImage = (base64Str: string): Promise<string> => {
     };
   });
 };
+
 const InventoryComponent: React.FC<InventoryProps> = ({
   inventoryItems,
   purchaseOrders,
@@ -530,7 +534,7 @@ const InventoryComponent: React.FC<InventoryProps> = ({
 
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [scannedResult, setScannedResult] = useState<string | null>(null);
-
+  const scannerRef = useRef<HTMLDivElement>(null);
   const [tempPriceString, setTempPriceString] = useState("");
 
   const [isOrderModalOpen, setOrderModalOpen] = useState(false);
@@ -631,38 +635,101 @@ const InventoryComponent: React.FC<InventoryProps> = ({
       console.error("Error al capturar pedido:", e);
     }
   };
+
   const handleBarcodeScan = (decodedText: string) => {
-    // 1. Buscamos el ítem por el campo 'barcode'
+    console.log("Código detectado:", decodedText);
     const item = inventoryItems.find((i) => i.barcode === decodedText);
 
     if (item) {
-      // 2. Pedimos la cantidad (acepta 0,5 gracias a parseDecimal)
       const qty = window.prompt(
-        `Producto detectado: ${item.name}\nIntroduce la cantidad a sumar (ej: 0,5 o 1):`,
+        `Producto detectado: ${item.name}\nIntroduce la cantidad a sumar:`,
         "1"
       );
-
       if (qty !== null) {
         const numericQty = parseDecimal(qty);
-
-        // 3. Actualizamos el stock (por defecto en Almacén)
         const updatedStock = {
           ...item.stockByLocation,
           Almacén: (Number(item.stockByLocation?.Almacén) || 0) + numericQty,
         };
-
         onSaveInventoryItem({
           ...item,
           stockByLocation: updatedStock,
         });
-
         alert(`Añadido ${numericQty} a ${item.name}`);
       }
     } else {
-      alert("Código de barras no encontrado en tu inventario: " + decodedText);
+      alert("Código de barras no encontrado: " + decodedText);
     }
     setIsScannerOpen(false);
   };
+
+  // 2. Función de Galería (Safari & Chrome)
+  const handleBarcodeFromGallery = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Usamos el visor existente "reader" pero asegurándonos de que esté limpio
+    const html5QrCode = new Html5Qrcode("reader");
+
+    try {
+      const decodedText = await html5QrCode.scanFile(file, true);
+      handleBarcodeScan(decodedText);
+    } catch (err) {
+      alert("No se detectó código. Intenta con una foto más clara y nítida.");
+      console.error(err);
+    } finally {
+      if (e.target) e.target.value = "";
+    }
+  };
+
+  useEffect(() => {
+    let scanner: any = null;
+
+    if (isScannerOpen) {
+      // Esperamos 500ms para que el modal de React termine de aparecer en el DOM
+      const timeoutId = setTimeout(() => {
+        const element = document.getElementById("reader");
+        if (!element) return;
+
+        try {
+          scanner = new Html5QrcodeScanner(
+            "reader",
+            {
+              fps: 15,
+              qrbox: { width: 250, height: 250 },
+              aspectRatio: 1.0,
+              videoConstraints: { facingMode: "environment" },
+              rememberLastUsedCamera: false,
+            },
+            false
+          );
+
+          scanner.render(
+            (decodedText: string) => {
+              handleBarcodeScan(decodedText);
+              // Cerramos el escáner automáticamente tras una lectura exitosa
+              scanner.clear();
+            },
+            () => {
+              /* Ignorar errores de escaneo buscando código */
+            }
+          );
+        } catch (err) {
+          console.error("Error al iniciar el escáner:", err);
+        }
+      }, 500);
+
+      return () => {
+        clearTimeout(timeoutId);
+        if (scanner) {
+          scanner.clear().catch((e: any) => console.log("Cámara apagada."));
+        }
+      };
+    }
+  }, [isScannerOpen]);
+
   const calculateTotalStock = (item: InventoryItem) => {
     if (!item.stockByLocation) return 0;
     // Aseguramos que los valores son tratados como números para la suma.
@@ -2096,7 +2163,7 @@ const InventoryComponent: React.FC<InventoryProps> = ({
 
       <div className="flex flex-col gap-1">
         <label className="text-xs text-slate-400 font-medium ml-1">
-          Código de Barras
+          Lector
         </label>
         <div className="relative">
           <input
@@ -2518,7 +2585,7 @@ const InventoryComponent: React.FC<InventoryProps> = ({
               >
                 <RefreshIcon className="h-6 w-6 md:h-4 md:w-4" />
                 {/* Ocultar texto hasta md */}
-                <span className="hidden md:inline">Resetear</span>
+                <span className="hidden md:inline">Reset</span>
               </button>
 
               {/* 🛑 BOTÓN GUARDAR: Ancho fijo 'w-8' en móvil y padding 'px-2' */}
@@ -2538,7 +2605,7 @@ const InventoryComponent: React.FC<InventoryProps> = ({
                 title="Escanear Código de Barras"
               >
                 <span className="text-base">🔍</span>
-                <span className="hidden md:inline">Código de barras</span>
+                <span className="hidden md:inline">Lector</span>
               </button>
               {/* 🛑 BOTÓN NUEVO PRODUCTO: Ancho fijo 'w-8' en móvil y padding 'px-2' */}
               <button
@@ -2761,43 +2828,47 @@ const InventoryComponent: React.FC<InventoryProps> = ({
 
       {activeTab === "orders" && (
         <div>
-                    {/* Contenedor que alinea el botón a la derecha */}       
+          {/* Contenedor de botones alineados a la derecha */}
           <div className="flex justify-end mb-4 gap-3">
-                     {/* 📸 INPUT DE CÁMARA (Oculto) */}
-            <input
-              type="file"
-              accept="image/*"
-              capture="environment"
-              className="hidden"
-              id="camera-order-input"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  const reader = new FileReader();
-                  reader.onloadend = async () => {
-                    const rawBase64 = (reader.result as string).split(",")[1];
-                    try {
-                      const compressedBase64 = await compressImage(rawBase64);
-                      handleCaptureOrder(compressedBase64);
-                    } catch (error) {
-                      console.error("Error al comprimir:", error);
-                      handleCaptureOrder(rawBase64);
-                    }
-                  };
-                  reader.readAsDataURL(file);
-                }
-              }}
-            />
-            {/* 📸 BOTÓN VISUAL PARA FOTO ALBARÁN */}
-            <label
-              htmlFor="camera-order-input"
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-1 px-3 rounded-lg flex items-center justify-center gap-2 text-sm transition duration-300 h-7 cursor-pointer"
-              title="Escanear albarán con Gemini"
-            >
-              <span className="text-base">📷</span>
-              <span className="hidden sm:inline">Foto Pedido</span>
-            </label>
-            {/* BOTÓN NUEVO PEDIDO MANUAL */}
+            {/* 📸 BOTÓN FOTO/GALERÍA (Estructura especial para Safari) */}
+            <div className="relative inline-block">
+              {/* Capa Visual: El botón que el usuario ve */}
+              <div className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-1 px-3 rounded-lg flex items-center justify-center gap-2 text-sm transition duration-300 h-7 shadow-lg cursor-pointer">
+                <span className="text-base">📷</span>
+                <span className="hidden sm:inline">Foto/Galería Pedido</span>
+              </div>
+
+              {/* Capa Funcional: El input real que Safari SÍ reconoce */}
+              <input
+                type="file"
+                accept="image/*"
+                id="camera-order-input"
+                /* - absolute inset-0: Estira el input sobre todo el botón verde.
+             - opacity-0: Lo hace invisible.
+             - Sin 'capture': Obliga a Safari a preguntar "Cámara o Fototeca".
+          */
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onloadend = async () => {
+                      const result = reader.result as string;
+                      const rawBase64 = result.split(",")[1];
+                      try {
+                        // Procesa y envía a la IA
+                        const compressedBase64 = await compressImage(rawBase64);
+                        handleCaptureOrder(compressedBase64);
+                      } catch (error) {
+                        handleCaptureOrder(rawBase64);
+                      }
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
+              />
+            </div>
+            {/* 🛑 BOTÓN NUEVO PEDIDO */}
             <button
               onClick={() => openOrderModal()}
               className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-1 px-3 rounded-lg flex items-center justify-center gap-2 text-sm transition duration-300 h-7"
@@ -3264,35 +3335,62 @@ const InventoryComponent: React.FC<InventoryProps> = ({
       )}
 
       {viewingRecord && renderInventoryRecordDetailModal()}
+
       {isScannerOpen && (
         <div className="fixed inset-0 z-[100] bg-black/90 flex flex-col items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-slate-800 p-6 rounded-2xl w-full max-w-md border border-slate-700 shadow-2xl">
+          <div className="bg-[#1e293b] p-6 rounded-2xl w-full max-w-md border border-slate-700 shadow-2xl relative">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-white font-bold text-sm flex items-center gap-2">
-                <span className="text-l">📷</span> Lector Código de Barras
+                Lector de Artículos
               </h3>
               <button
                 onClick={() => setIsScannerOpen(false)}
-                className="bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white px-1.5 py-0.5 rounded-lg transition-colors text-sm font-bold border border-red-500/30"
+                className="bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white px-3 py-1 rounded-lg transition-colors text-xs font-bold border border-red-500/30"
               >
                 Cerrar
               </button>
             </div>
 
-            {/* 🛑 EL ID DEBE SER "reader" PARA QUE EL EFFECT LO ENCUENTRE */}
+            {/* Visor de Cámara */}
             <div
               id="reader"
-              className="overflow-hidden rounded-xl border-2 border-indigo-500/50 bg-slate-900 aspect-square shadow-inner"
+              className="overflow-hidden rounded-xl border border-slate-700 bg-slate-900 aspect-square w-full mb-6"
             ></div>
 
-            <div className="mt-6 text-center space-y-2">
-              <p className="text-slate-200 text-sm font-medium">
-                Enfoca el código de barras de la botella
-              </p>
-              <p className="text-slate-500 text-[11px] italic">
-                Permite que la cámara enfoque automáticamente
-              </p>
+            <div className="relative flex py-2 items-center mb-4">
+              <div className="flex-grow border-t border-slate-700"></div>
+              <span className="flex-shrink mx-4 text-slate-500 text-[10px] uppercase font-bold tracking-widest">
+                O también
+              </span>
+              <div className="flex-grow border-t border-slate-700"></div>
             </div>
+
+            {/* BOTÓN GALERÍA RECONSTRUIDO PARA SAFARI */}
+            <div className="relative h-16 w-full">
+              {/* Esta es la capa estética que tú ves */}
+              <div className="absolute inset-0 flex items-center justify-center gap-4 bg-slate-700/50 text-white rounded-xl border border-slate-600 pointer-events-none">
+                <span className="text-2xl">🖼️</span>
+                <div className="text-left">
+                  <p className="text-sm font-bold">Subir desde Galería</p>
+                  <p className="text-[10px] text-slate-400">
+                    Pulsa aquí para elegir foto
+                  </p>
+                </div>
+              </div>
+
+              {/* 🛑 EL INPUT REAL: Ocupa todo el botón, es invisible y tiene el z-index más alto */}
+              <input
+                type="file"
+                accept="image/jpeg, image/png, image/jpg"
+                onChange={handleBarcodeFromGallery}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-[110]"
+                style={{ WebkitTapHighlightColor: "transparent" }}
+              />
+            </div>
+
+            <p className="mt-4 text-[10px] text-center text-slate-500 italic">
+              Nota: En iPhone, selecciona "Fototeca" para abrir tu galería.
+            </p>
           </div>
         </div>
       )}
