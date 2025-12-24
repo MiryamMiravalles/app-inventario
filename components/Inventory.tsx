@@ -635,21 +635,101 @@ const InventoryComponent: React.FC<InventoryProps> = ({
     }
   };
 
-  const handleBarcodeScan = (decodedText: string) => {
-    // 1. EFECTO VISUAL DE ÉXITO (Parpadeo verde)
-    const readerElement = document.getElementById("reader");
-    if (readerElement) {
-      readerElement.classList.add("scan-success");
+  useEffect(() => {
+    const style = document.createElement("style");
+    style.innerHTML = `
+    /* Forzar que el video sea visible y ocupe todo el espacio */
+    #reader {
+      width: 100% !important;
+      height: 100% !important;
+    }
+    #reader video { 
+      object-fit: cover !important; 
+      width: 100% !important;
+      height: 100% !important;
+      border-radius: 1rem;
+    }
+    
+    /* Eliminar elementos que ensucian la interfaz */
+    #reader__dashboard, #reader__status_span, #reader img { 
+      display: none !important; 
+    }
+    #reader__scan_region { 
+      display: flex !important; 
+      justify-content: center !important; 
+      align-items: center !important;
+      width: 100% !important;
+      height: 100% !important;
     }
 
-    // 2. VIBRACIÓN (Feedback táctil pro)
+    @keyframes laser-scan {
+      0% { top: 10%; opacity: 0; }
+      50% { opacity: 1; }
+      100% { top: 90%; opacity: 0; }
+    }
+    .laser-line {
+      position: absolute;
+      left: 5%;
+      width: 90%;
+      height: 3px;
+      background-color: #ef4444;
+      box-shadow: 0 0 15px 2px #ef4444;
+      z-index: 30;
+      animation: laser-scan 2s infinite ease-in-out;
+      pointer-events: none;
+    }
+
+    .scan-success-border {
+      box-shadow: inset 0 0 0 6px #22c55e !important;
+      border-color: #22c55e !important;
+      background: rgba(34, 197, 94, 0.2) !important;
+    }
+  `;
+    document.head.appendChild(style);
+    return () => {
+      if (document.head.contains(style)) document.head.removeChild(style);
+    };
+  }, []);
+
+  const handleBarcodeScan = (decodedText: string) => {
+    // 1. Activar el recuadro verde en el contenedor
+    const container = document.getElementById("scanner-container");
+    if (container) {
+      container.classList.add("scan-success-border");
+    }
+
+    // 2. PITIDO PROFESIONAL (Audio Context)
+    try {
+      const audioCtx = new (window.AudioContext ||
+        (window as any).webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+
+      osc.type = "sine"; // Sonido puro
+      osc.frequency.setValueAtTime(900, audioCtx.currentTime); // Tono agudo (900Hz)
+
+      gain.gain.setValueAtTime(0, audioCtx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.01); // Ataque rápido
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15); // Decaimiento suave
+
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.15);
+    } catch (e) {
+      console.error("El navegador bloqueó el audio inicial:", e);
+    }
+
+    // 3. VIBRACIÓN DOBLE (Estilo Industrial)
     if (navigator.vibrate) {
-      navigator.vibrate(100);
+      // Patrón: Vibración corta, pausa, vibración corta
+      navigator.vibrate([100, 50, 100]);
     }
 
     console.log("Código detectado:", decodedText);
 
-    // 3. PEQUEÑA PAUSA PARA QUE SE VEA EL EFECTO ANTES DEL PROMPT
+    // 4. PAUSA DE PROCESAMIENTO
     setTimeout(() => {
       const item = inventoryItems.find((i) => i.barcode === decodedText);
 
@@ -670,19 +750,15 @@ const InventoryComponent: React.FC<InventoryProps> = ({
             ...item,
             stockByLocation: updatedStock,
           });
-
-          alert(`¡Listo! Se han añadido ${numericQty} unidades a ${item.name}`);
         }
       } else {
-        alert(
-          "❌ Código de barras no encontrado en el sistema: " + decodedText
-        );
+        alert("❌ Código no registrado: " + decodedText);
       }
 
-      // Limpiamos el efecto y cerramos el escáner al terminar
-      if (readerElement) readerElement.classList.remove("scan-success");
+      // Limpieza de efectos y cierre automático
+      if (container) container.classList.remove("scan-success-border");
       setIsScannerOpen(false);
-    }, 350); // 350ms es el tiempo ideal para notar el parpadeo verde
+    }, 500); // 400ms para que de tiempo a sentir la vibración y ver el verde
   };
 
   // 2. Función de Galería (Safari & Chrome)
@@ -707,64 +783,50 @@ const InventoryComponent: React.FC<InventoryProps> = ({
   };
 
   useEffect(() => {
-    let scanner: any = null;
+    let html5QrCode: Html5Qrcode | null = null;
 
     if (isScannerOpen) {
-      // Esperamos 500ms para que el modal de React termine de aparecer en el DOM
-      const timeoutId = setTimeout(() => {
+      const timeoutId = setTimeout(async () => {
         const element = document.getElementById("reader");
         if (!element) return;
 
-        try {
-          scanner = new Html5QrcodeScanner(
-            "reader",
-            {
-              fps: 20,
-              // Forzamos el centrado dinámico del recuadro
-              qrbox: (viewfinderWidth, viewfinderHeight) => {
-                const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-                const size = Math.floor(minEdge * 0.7); // El recuadro ocupará el 70% del centro
-                return {
-                  width: size,
-                  height: size,
-                };
-              },
-              aspectRatio: 1.0, // Fuerza el visor a ser cuadrado
-              videoConstraints: {
-                facingMode: "environment",
-                // Añadimos estas restricciones para asegurar que el foco sea central
-                aspectRatio: { ideal: 1.0 },
-              },
-              rememberLastUsedCamera: false,
-              showTorchButtonIfSupported: true, // Útil si escaneas en almacenes oscuros
-            },
-            false
-          );
+        // Usamos la versión limpia de la librería
+        html5QrCode = new Html5Qrcode("reader");
 
-          scanner.render(
-            (decodedText: string) => {
+        const config = {
+          fps: 20,
+          qrbox: { width: 250, height: 250 },
+          aspectRatio: 1.0,
+        };
+
+        try {
+          await html5QrCode.start(
+            { facingMode: "environment" },
+            config,
+            (decodedText) => {
               handleBarcodeScan(decodedText);
-              // Cerramos el escáner automáticamente tras una lectura exitosa
-              scanner.clear();
+              // Detenemos la cámara tras el éxito
+              if (html5QrCode) {
+                html5QrCode.stop().catch((err) => console.error(err));
+              }
             },
             () => {
-              /* Ignorar errores de escaneo buscando código */
+              /* Escaneando... */
             }
           );
         } catch (err) {
-          console.error("Error al iniciar el escáner:", err);
+          console.error("No se pudo iniciar la cámara:", err);
         }
       }, 500);
 
       return () => {
         clearTimeout(timeoutId);
-        if (scanner) {
-          scanner.clear().catch((e: any) => console.log("Cámara apagada."));
+        if (html5QrCode && html5QrCode.isScanning) {
+          html5QrCode.stop().catch((err) => console.error(err));
         }
       };
     }
   }, [isScannerOpen]);
-
   const calculateTotalStock = (item: InventoryItem) => {
     if (!item.stockByLocation) return 0;
     // Aseguramos que los valores son tratados como números para la suma.
@@ -3386,12 +3448,26 @@ const InventoryComponent: React.FC<InventoryProps> = ({
               </button>
             </div>
 
-            {/* Visor de Cámara */}
-            <div className="flex flex-col items-center justify-center w-full">
+            {/* --- ESTA ES LA PARTE QUE CAMBIA (Visor Profesional) --- */}
+            <div className="flex flex-col items-center justify-center w-full relative">
               <div
-                id="reader"
-                className="overflow-hidden rounded-xl border-2 border-slate-700 bg-slate-900 aspect-square w-full max-w-[300px] mb-6 shadow-inner"
-              ></div>
+                id="scanner-container"
+                className="relative overflow-hidden rounded-2xl border-2 border-slate-700 bg-slate-900 aspect-square w-full max-w-[300px] mb-6 shadow-2xl transition-all duration-300"
+              >
+                {/* La línea roja que sube y baja */}
+                <div className="laser-line"></div>
+
+                {/* Esquinas blancas de enfoque */}
+                <div className="absolute inset-0 z-20 pointer-events-none">
+                  <div className="absolute top-4 left-4 w-8 h-8 border-t-4 border-l-4 border-white/40 rounded-tl-lg"></div>
+                  <div className="absolute top-4 right-4 w-8 h-8 border-t-4 border-r-4 border-white/40 rounded-tr-lg"></div>
+                  <div className="absolute bottom-4 left-4 w-8 h-8 border-b-4 border-l-4 border-white/40 rounded-bl-lg"></div>
+                  <div className="absolute bottom-4 right-4 w-8 h-8 border-b-4 border-r-4 border-white/40 rounded-br-lg"></div>
+                </div>
+
+                {/* El Lector Real (Mantenemos el id="reader") */}
+                <div id="reader" className="w-full h-full"></div>
+              </div>
             </div>
 
             <div className="relative flex py-2 items-center mb-4">
@@ -3402,20 +3478,15 @@ const InventoryComponent: React.FC<InventoryProps> = ({
               <div className="flex-grow border-t border-slate-700"></div>
             </div>
 
-            {/* BOTÓN GALERÍA RECONSTRUIDO PARA SAFARI */}
+            {/* BOTÓN GALERÍA */}
             <div className="relative h-16 w-full">
-              {/* Esta es la capa estética que tú ves */}
               <div className="absolute inset-0 flex items-center justify-center gap-4 bg-slate-700/50 text-white rounded-xl border border-slate-600 pointer-events-none">
                 <span className="text-2xl">🖼️</span>
                 <div className="text-left">
                   <p className="text-sm font-bold">Subir desde Galería</p>
-                  <p className="text-[10px] text-slate-400">
-                    Pulsa aquí para elegir foto
-                  </p>
+                  <p className="text-[10px] text-slate-400">Seleccionar foto</p>
                 </div>
               </div>
-
-              {/* 🛑 EL INPUT REAL: Ocupa todo el botón, es invisible y tiene el z-index más alto */}
               <input
                 type="file"
                 accept="image/jpeg, image/png, image/jpg"
