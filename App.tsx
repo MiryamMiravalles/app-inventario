@@ -10,7 +10,6 @@ import InventoryComponent from "./components/Inventory";
 import { MenuIcon, XIcon } from "./components/icons";
 import { INVENTORY_LOCATIONS } from "./constants";
 
-// IMPORTANTE: Asegúrate de que este import sea correcto en tu entorno.
 import { api } from "./src/api";
 
 export const userPrices: { [name: string]: number } = {
@@ -162,7 +161,7 @@ const initialStockByLocation = INVENTORY_LOCATIONS.reduce(
   {}
 );
 
-// Función SOLO para crear el objeto de stock inicial de un artículo nuevo,
+// Función SOLO para crear el objeto de stock inicial de un artículo nuevo
 const createInitialStockObject = (
   initialStock: number = 0,
   location = "Almacén"
@@ -178,13 +177,15 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a1",
     name: "Absolut",
     category: "🧊 Vodka",
-    stockByLocation: createInitialStockObject(0), // Stock para prueba
+    barcode: "",
+    stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Absolut"] || 0,
   },
   {
     id: "a2",
     name: "Beluga",
     category: "🧊 Vodka",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Beluga"] || 0,
   },
@@ -192,6 +193,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a3",
     name: "Belvedere",
     category: "🧊 Vodka",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Belvedere"] || 0,
   },
@@ -199,6 +201,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a4",
     name: "Grey Goose",
     category: "🧊 Vodka",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Grey Goose"] || 0,
   },
@@ -206,6 +209,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a5",
     name: "Vozca Negro",
     category: "🧊 Vodka",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Vozca Negro"] || 0,
   },
@@ -214,6 +218,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a6",
     name: "Bacardi 8",
     category: "🥥 Ron",
+    barcode: "",
     stockByLocation: createInitialStockObject(0), // Stock para prueba
     pricePerUnitWithoutIVA: userPrices["Bacardi 8"] || 0,
   },
@@ -221,6 +226,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a7",
     name: "Bacardi Carta Blanca 1Lt",
     category: "🥥 Ron",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Bacardi Carta Blanca 1Lt"] || 0,
   },
@@ -228,13 +234,16 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a8",
     name: "Bumbu Original",
     category: "🥥 Ron",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Bumbu Original"] || 0,
   },
+
   {
     id: "a9",
     name: "Brugal",
     category: "🥥 Ron",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Brugal"] || 0,
   },
@@ -242,6 +251,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a10",
     name: "Havana Club",
     category: "🥥 Ron",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Havana Club"] || 0,
   },
@@ -249,6 +259,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a11",
     name: "Malibu",
     category: "🥥 Ron",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Malibu"] || 0,
   },
@@ -256,6 +267,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a12",
     name: "Sta Teresa Gran Reserva",
     category: "🥥 Ron",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Sta Teresa Gran Reserva"] || 0,
   },
@@ -263,6 +275,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a13",
     name: "Sta Teresa 1796",
     category: "🥥 Ron",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Sta Teresa 1796"] || 0,
   },
@@ -270,6 +283,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a14",
     name: "Zacapa 23",
     category: "🥥 Ron",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Zacapa 23"] || 0,
   },
@@ -277,21 +291,23 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a15",
     name: "Zacapa XO",
     category: "🥥 Ron",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Zacapa XO"] || 0,
   },
-  // Whisky / Bourbon
   {
     id: "a16",
     name: "Ballantines",
     category: "🥃 Whisky / Bourbon",
-    stockByLocation: createInitialStockObject(7.5), // Stock para prueba (decimal)
+    barcode: "",
+    stockByLocation: createInitialStockObject(7.5),
     pricePerUnitWithoutIVA: userPrices["Ballantines"] || 0,
   },
   {
     id: "a17",
     name: "Ballantines 10",
     category: "🥃 Whisky / Bourbon",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Ballantines 10"] || 0,
   },
@@ -299,6 +315,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a18",
     name: "Bullet",
     category: "🥃 Whisky / Bourbon",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Bullet"] || 0,
   },
@@ -306,6 +323,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a19",
     name: "Chivas 12",
     category: "🥃 Whisky / Bourbon",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Chivas 12"] || 0,
   },
@@ -313,6 +331,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a20",
     name: "Chivas 15",
     category: "🥃 Whisky / Bourbon",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Chivas 15"] || 0,
   },
@@ -320,6 +339,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a21",
     name: "Carlos I",
     category: "🥃 Whisky / Bourbon",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Carlos I"] || 0,
   },
@@ -327,6 +347,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a22",
     name: "Dewars Whait label",
     category: "🥃 Whisky / Bourbon",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Dewars Whait label"] || 0,
   },
@@ -334,6 +355,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a23",
     name: "Four Roses",
     category: "🥃 Whisky / Bourbon",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Four Roses"] || 0,
   },
@@ -341,6 +363,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a24",
     name: "Hennesy",
     category: "🥃 Whisky / Bourbon",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Hennesy"] || 0,
   },
@@ -348,6 +371,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a25",
     name: "JB",
     category: "🥃 Whisky / Bourbon",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["JB"] || 0,
   },
@@ -355,6 +379,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a26",
     name: "J. Walker Black Label",
     category: "🥃 Whisky / Bourbon",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["J. Walker Black Label"] || 0,
   },
@@ -362,6 +387,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a27",
     name: "J. Walker Gold Label Reserve",
     category: "🥃 Whisky / Bourbon",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["J. Walker Gold Label Reserve"] || 0,
   },
@@ -369,6 +395,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a28",
     name: "J. Walker White",
     category: "🥃 Whisky / Bourbon",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["J. Walker White"] || 0,
   },
@@ -376,6 +403,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a29",
     name: "J.Walcker E.Black 0.7 Luxe",
     category: "🥃 Whisky / Bourbon",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["J.Walcker E.Black 0.7 Luxe"] || 0,
   },
@@ -383,6 +411,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a30",
     name: "Jack Daniel’s",
     category: "🥃 Whisky / Bourbon",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Jack Daniel’s"] || 0,
   },
@@ -390,6 +419,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a31",
     name: "Jameson",
     category: "🥃 Whisky / Bourbon",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Jameson"] || 0,
   },
@@ -397,6 +427,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a32",
     name: "Lagavulin",
     category: "🥃 Whisky / Bourbon",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Lagavulin"] || 0,
   },
@@ -404,6 +435,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a33",
     name: "Macallan 12 años double cask",
     category: "🥃 Whisky / Bourbon",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Macallan 12 años double cask"] || 0,
   },
@@ -411,14 +443,15 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a34",
     name: "Torres 10",
     category: "🥃 Whisky / Bourbon",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Torres 10"] || 0,
   },
-  // Ginebra
   {
     id: "a35",
     name: "Beefeater",
     category: "🍸 Ginebra",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Beefeater"] || 0,
   },
@@ -426,6 +459,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a36",
     name: "Beefeater 0%",
     category: "🍸 Ginebra",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Beefeater 0%"] || 0,
   },
@@ -433,6 +467,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a37",
     name: "Beefeater Black",
     category: "🍸 Ginebra",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Beefeater Black"] || 0,
   },
@@ -440,6 +475,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a38",
     name: "Beefeater Pink",
     category: "🍸 Ginebra",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Beefeater Pink"] || 0,
   },
@@ -447,6 +483,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a39",
     name: "Beefeater Pink 20%",
     category: "🍸 Ginebra",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Beefeater Pink 20%"] || 0,
   },
@@ -454,6 +491,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a40",
     name: "Beefeater Pink Premium",
     category: "🍸 Ginebra",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Beefeater Pink Premium"] || 0,
   },
@@ -461,6 +499,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a41",
     name: "Bombay Saphire",
     category: "🍸 Ginebra",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Bombay Saphire"] || 0,
   },
@@ -468,6 +507,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a42",
     name: "G’Vine",
     category: "🍸 Ginebra",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["G’Vine"] || 0,
   },
@@ -475,6 +515,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a43",
     name: "Gin Mare",
     category: "🍸 Ginebra",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Gin Mare"] || 0,
   },
@@ -482,6 +523,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a44",
     name: "Hendricks",
     category: "🍸 Ginebra",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Hendricks"] || 0,
   },
@@ -489,6 +531,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a45",
     name: "Malfy Limón",
     category: "🍸 Ginebra",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Malfy Limón"] || 0,
   },
@@ -496,6 +539,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a46",
     name: "Monkey 47",
     category: "🍸 Ginebra",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Monkey 47"] || 0,
   },
@@ -503,6 +547,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a47",
     name: "Seagrams",
     category: "🍸 Ginebra",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Seagrams"] || 0,
   },
@@ -510,6 +555,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a48",
     name: "Seagrams 0%",
     category: "🍸 Ginebra",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Seagrams 0%"] || 0,
   },
@@ -517,14 +563,15 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a49",
     name: "Tanqueray Ten",
     category: "🍸 Ginebra",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Tanqueray Ten"] || 0,
   },
-  // Tequila
   {
     id: "a50",
     name: "Cazadores",
     category: "🌵 Tequila",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Cazadores"] || 0,
   },
@@ -532,6 +579,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a51",
     name: "Código Blanco",
     category: "🌵 Tequila",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Código Blanco"] || 0,
   },
@@ -539,6 +587,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a52",
     name: "Código Reposado",
     category: "🌵 Tequila",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Código Reposado"] || 0,
   },
@@ -546,6 +595,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a53",
     name: "Código Rosa",
     category: "🌵 Tequila",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Código Rosa"] || 0,
   },
@@ -553,6 +603,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a54",
     name: "Jose Cuervo (tequila)",
     category: "🌵 Tequila",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Jose Cuervo (tequila)"] || 0,
   },
@@ -560,6 +611,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a55",
     name: "Patrón Reposado",
     category: "🌵 Tequila",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Patrón Reposado"] || 0,
   },
@@ -567,6 +619,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a56",
     name: "Patrón Silver",
     category: "🌵 Tequila",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Patrón Silver"] || 0,
   },
@@ -574,6 +627,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a57",
     name: "Tequila Clase Azul Reposado",
     category: "🌵 Tequila",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Tequila Clase Azul Reposado"] || 0,
   },
@@ -581,6 +635,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a58",
     name: "Tequila Don Julio 1942",
     category: "🌵 Tequila",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Tequila Don Julio 1942"] || 0,
   },
@@ -588,6 +643,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a59",
     name: "Tequila Don Julio Blanco",
     category: "🌵 Tequila",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Tequila Don Julio Blanco"] || 0,
   },
@@ -595,6 +651,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a60",
     name: "Tequila Don Julio Reposado 0.7",
     category: "🌵 Tequila",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Tequila Don Julio Reposado 0.7"] || 0,
   },
@@ -602,6 +659,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a61",
     name: "Tequila Olmeca",
     category: "🌵 Tequila",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Tequila Olmeca"] || 0,
   },
@@ -609,14 +667,15 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a62",
     name: "Tequifresi",
     category: "🌵 Tequila",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Tequifresi"] || 0,
   },
-  // Mezcal
   {
     id: "a63",
     name: "Mezcal Bhanes",
     category: "🔥 Mezcal",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Mezcal Bhanes"] || 0,
   },
@@ -624,6 +683,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a64",
     name: "Mezcal Joven Casamigos",
     category: "🔥 Mezcal",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Mezcal Joven Casamigos"] || 0,
   },
@@ -631,14 +691,15 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a65",
     name: "Sarajishviu",
     category: "🔥 Mezcal",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Sarajishviu"] || 0,
   },
-  // Licores y Aperitivos
   {
     id: "a66",
     name: "Aperitivo (Petroni)",
     category: "🍯 Licores y Aperitivos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Aperitivo (Petroni)"] || 0,
   },
@@ -646,6 +707,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a67",
     name: "Aperol",
     category: "🍯 Licores y Aperitivos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Aperol"] || 0,
   },
@@ -653,6 +715,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a68",
     name: "Baileys 1 Lt",
     category: "🍯 Licores y Aperitivos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Baileys 1 Lt"] || 0,
   },
@@ -660,6 +723,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a69",
     name: "Blue Coraçao",
     category: "🍯 Licores y Aperitivos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Blue Coraçao"] || 0,
   },
@@ -667,6 +731,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a70",
     name: "Cachaça (Vhelo Barreiro)",
     category: "🍯 Licores y Aperitivos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Cachaça (Vhelo Barreiro)"] || 0,
   },
@@ -674,6 +739,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a71",
     name: "Campari",
     category: "🍯 Licores y Aperitivos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Campari"] || 0,
   },
@@ -681,6 +747,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a72",
     name: "Caiman Love Almendras",
     category: "🍯 Licores y Aperitivos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Caiman Love Almendras"] || 0,
   },
@@ -688,6 +755,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a73",
     name: "Cointreau",
     category: "🍯 Licores y Aperitivos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Cointreau"] || 0,
   },
@@ -695,6 +763,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a74",
     name: "Cordial de Lima (Caiman)",
     category: "🍯 Licores y Aperitivos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Cordial de Lima (Caiman)"] || 0,
   },
@@ -702,6 +771,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a75",
     name: "Cordial de Grosella (Caiman)",
     category: "🍯 Licores y Aperitivos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Cordial de Grosella (Caiman)"] || 0,
   },
@@ -709,6 +779,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a76",
     name: "Disaronno",
     category: "🍯 Licores y Aperitivos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Disaronno"] || 0,
   },
@@ -716,6 +787,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a77",
     name: "Fernet",
     category: "🍯 Licores y Aperitivos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Fernet"] || 0,
   },
@@ -723,6 +795,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a78",
     name: "Frangelico",
     category: "🍯 Licores y Aperitivos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Frangelico"] || 0,
   },
@@ -730,6 +803,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a79",
     name: "Hiervas Ibiza Mary Mayans",
     category: "🍯 Licores y Aperitivos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Hiervas Ibiza Mary Mayans"] || 0,
   },
@@ -737,6 +811,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a80",
     name: "Jagermeister",
     category: "🍯 Licores y Aperitivos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Jagermeister"] || 0,
   },
@@ -744,6 +819,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a81",
     name: "Jet Wild Fruits",
     category: "🍯 Licores y Aperitivos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Jet Wild Fruits"] || 0,
   },
@@ -751,6 +827,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a82",
     name: "Kalhua",
     category: "🍯 Licores y Aperitivos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Kalhua"] || 0,
   },
@@ -758,6 +835,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a83",
     name: "Licor 43",
     category: "🍯 Licores y Aperitivos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Licor 43"] || 0,
   },
@@ -765,6 +843,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a84",
     name: "Licor de Cassís",
     category: "🍯 Licores y Aperitivos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Licor de Cassís"] || 0,
   },
@@ -772,6 +851,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a85",
     name: "Limoncello (Villa Massa)",
     category: "🍯 Licores y Aperitivos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Limoncello (Villa Massa)"] || 0,
   },
@@ -779,6 +859,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a86",
     name: "Midori",
     category: "🍯 Licores y Aperitivos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Midori"] || 0,
   },
@@ -786,6 +867,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a87",
     name: "Passoa",
     category: "🍯 Licores y Aperitivos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Passoa"] || 0,
   },
@@ -793,6 +875,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a88",
     name: "Patxaran",
     category: "🍯 Licores y Aperitivos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Patxaran"] || 0,
   },
@@ -800,6 +883,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a89",
     name: "Pisco",
     category: "🍯 Licores y Aperitivos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Pisco"] || 0,
   },
@@ -807,6 +891,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a90",
     name: "Rua Vieja (crema)",
     category: "🍯 Licores y Aperitivos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Rua Vieja (crema)"] || 0,
   },
@@ -814,6 +899,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a91",
     name: "Rua Vieja aguardiente",
     category: "🍯 Licores y Aperitivos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Rua Vieja aguardiente"] || 0,
   },
@@ -821,6 +907,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a92",
     name: "Rua Vieja café",
     category: "🍯 Licores y Aperitivos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Rua Vieja café"] || 0,
   },
@@ -828,6 +915,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a93",
     name: "Rua Vieja (Licor de hierbas)",
     category: "🍯 Licores y Aperitivos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Rua Vieja (Licor de hierbas)"] || 0,
   },
@@ -835,6 +923,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a94",
     name: "Saint Germain",
     category: "🍯 Licores y Aperitivos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Saint Germain"] || 0,
   },
@@ -842,13 +931,15 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a95",
     name: "Santa Fe Grosella",
     category: "🍯 Licores y Aperitivos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
-    pricePerUnitWithoutIVA: userPrices["Santa Fe Grosella"] || 0, // AÑADIDO: Ahora tiene precio
+    pricePerUnitWithoutIVA: userPrices["Santa Fe Grosella"] || 0,
   },
   {
     id: "a96",
     name: "Ratafia",
     category: "🍯 Licores y Aperitivos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Ratafia"] || 0,
   },
@@ -856,14 +947,15 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a97",
     name: "Triple Sec (Caiman)",
     category: "🍯 Licores y Aperitivos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Triple Sec (Caiman)"] || 0,
   },
-  // Vermut
   {
     id: "a98",
     name: "Martini Blanco",
     category: "🍷 Vermut",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Martini Blanco"] || 0,
   },
@@ -871,6 +963,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a99",
     name: "Martini Fiero",
     category: "🍷 Vermut",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Martini Fiero"] || 0,
   },
@@ -878,6 +971,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a100",
     name: "Martini Rosso",
     category: "🍷 Vermut",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Martini Rosso"] || 0,
   },
@@ -885,6 +979,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a101",
     name: "Martini Reserva",
     category: "🍷 Vermut",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Martini Reserva"] || 0,
   },
@@ -892,6 +987,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a102",
     name: "UNIQ Vermut",
     category: "🍷 Vermut",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["UNIQ Vermut"] || 0,
   },
@@ -899,6 +995,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a103",
     name: "Vermut Negro",
     category: "🍷 Vermut",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Vermut Negro"] || 0,
   },
@@ -906,6 +1003,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a104",
     name: "Vermut Miró blanco",
     category: "🍷 Vermut",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Vermut Miró blanco"] || 0,
   },
@@ -913,14 +1011,15 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a105",
     name: "Vermut Miró negro",
     category: "🍷 Vermut",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Vermut Miró negro"] || 0,
   },
-  // Vinos y espumosos
   {
     id: "a106",
     name: "Plana d'en fonoll (Sauvignon)",
     category: "🥂 Vinos y espumosos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Plana d'en fonoll (Sauvignon)"] || 0,
   },
@@ -928,6 +1027,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a107",
     name: "Piedra (Verdejo)",
     category: "🥂 Vinos y espumosos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Piedra (Verdejo)"] || 0,
   },
@@ -935,6 +1035,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a108",
     name: "Bicicletas y Peces (Verdejo)",
     category: "🥂 Vinos y espumosos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Bicicletas y Peces (Verdejo)"] || 0,
   },
@@ -942,6 +1043,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a109",
     name: "Maricel (Malvasia de Sitges)",
     category: "🥂 Vinos y espumosos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Maricel (Malvasia de Sitges)"] || 0,
   },
@@ -949,6 +1051,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a110",
     name: "Mar de Frades (Albariño)",
     category: "🥂 Vinos y espumosos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Mar de Frades (Albariño)"] || 0,
   },
@@ -956,6 +1059,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a111",
     name: "El Fanio 2022 (Xarel-lo)",
     category: "🥂 Vinos y espumosos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["El Fanio 2022 (Xarel-lo)"] || 0,
   },
@@ -963,6 +1067,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a112",
     name: "Albariño LAMEESPIÑAS",
     category: "🥂 Vinos y espumosos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Albariño LAMEESPIÑAS"] || 0,
   },
@@ -970,6 +1075,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a113",
     name: "MarT",
     category: "🥂 Vinos y espumosos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["MarT"] || 0,
   },
@@ -977,6 +1083,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a114",
     name: "Savinat",
     category: "🥂 Vinos y espumosos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Savinat"] || 0,
   },
@@ -984,6 +1091,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a115",
     name: "Malvasia Sitges",
     category: "🥂 Vinos y espumosos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Malvasia Sitges"] || 0,
   },
@@ -991,6 +1099,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a116",
     name: "Fenomenal",
     category: "🥂 Vinos y espumosos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Fenomenal"] || 0,
   },
@@ -998,6 +1107,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a117",
     name: "Llagrimes (Gartnatxa)",
     category: "🥂 Vinos y espumosos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Llagrimes (Gartnatxa)"] || 0,
   },
@@ -1005,6 +1115,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a118",
     name: "Maison Sainte Marguerite",
     category: "🥂 Vinos y espumosos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Maison Sainte Marguerite"] || 0,
   },
@@ -1012,6 +1123,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a119",
     name: "Sospechoso",
     category: "🥂 Vinos y espumosos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Sospechoso"] || 0,
   },
@@ -1019,6 +1131,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a120",
     name: "Sospechoso MAGNUM",
     category: "🥂 Vinos y espumosos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Sospechoso MAGNUM"] || 0,
   },
@@ -1026,6 +1139,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a121",
     name: "Miraval",
     category: "🥂 Vinos y espumosos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Miraval"] || 0,
   },
@@ -1033,6 +1147,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a122",
     name: "M Minuty",
     category: "🥂 Vinos y espumosos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["M Minuty"] || 0,
   },
@@ -1040,6 +1155,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a123",
     name: "Convento Oreja ( Ribera del Duero)",
     category: "🥂 Vinos y espumosos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA:
       userPrices["Convento Oreja ( Ribera del Duero)"] || 0,
@@ -1048,6 +1164,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a124",
     name: "Corbatera (Montsant)",
     category: "🥂 Vinos y espumosos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Corbatera (Montsant)"] || 0,
   },
@@ -1055,6 +1172,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a125",
     name: "Plana d'en fonoll (Cabernet-Sauvignon)",
     category: "🥂 Vinos y espumosos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA:
       userPrices["Plana d'en fonoll (Cabernet-Sauvignon)"] || 0,
@@ -1063,6 +1181,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a126",
     name: "Azpilicueta",
     category: "🥂 Vinos y espumosos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Azpilicueta"] || 0,
   },
@@ -1070,6 +1189,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a127",
     name: "Lagrimas de Maria (Tempranillo-Crianza)",
     category: "🥂 Vinos y espumosos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA:
       userPrices["Lagrimas de Maria (Tempranillo-Crianza)"] || 0,
@@ -1078,6 +1198,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a128",
     name: "Pago Carrovejas",
     category: "🥂 Vinos y espumosos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Pago Carrovejas"] || 0,
   },
@@ -1085,6 +1206,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a129",
     name: "Pruno",
     category: "🥂 Vinos y espumosos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Pruno"] || 0,
   },
@@ -1092,6 +1214,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a130",
     name: "Finca Villacreces",
     category: "🥂 Vinos y espumosos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Finca Villacreces"] || 0,
   },
@@ -1099,6 +1222,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a131",
     name: "Predicador",
     category: "🥂 Vinos y espumosos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Predicador"] || 0,
   },
@@ -1106,6 +1230,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a132",
     name: "El hombre bala",
     category: "🥂 Vinos y espumosos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["El hombre bala"] || 0,
   },
@@ -1113,6 +1238,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a133",
     name: "Corimbo",
     category: "🥂 Vinos y espumosos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Corimbo"] || 0,
   },
@@ -1120,6 +1246,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a134",
     name: "Corral de Campanas (TINTA DE TORO)",
     category: "🥂 Vinos y espumosos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA:
       userPrices["Corral de Campanas (TINTA DE TORO)"] || 0,
@@ -1128,6 +1255,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a135",
     name: "Quinta Quietud (TINTA DE TORO)",
     category: "🥂 Vinos y espumosos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Quinta Quietud (TINTA DE TORO)"] || 0,
   },
@@ -1135,6 +1263,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a136",
     name: "La MULA ( TINTA DE TORO)",
     category: "🥂 Vinos y espumosos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["La MULA ( TINTA DE TORO)"] || 0,
   },
@@ -1142,6 +1271,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a137",
     name: "Castell de Ribes (CAVA) Rosado",
     category: "🥂 Vinos y espumosos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Castell de Ribes (CAVA) Rosado"] || 0,
   },
@@ -1149,6 +1279,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a138",
     name: "Castell de Ribes (CAVA) Blanco",
     category: "🥂 Vinos y espumosos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Castell de Ribes (CAVA) Blanco"] || 0,
   },
@@ -1156,6 +1287,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a139",
     name: "CAVA Gramona LUSTROS",
     category: "🥂 Vinos y espumosos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["CAVA Gramona LUSTROS"] || 0,
   },
@@ -1163,6 +1295,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a140",
     name: "MUM CHAMPAGNE BRUT",
     category: "🥂 Vinos y espumosos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["MUM CHAMPAGNE BRUT"] || 0,
   },
@@ -1170,6 +1303,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a141",
     name: "MUM CHAMPAGNE ROSE",
     category: "🥂 Vinos y espumosos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["MUM CHAMPAGNE ROSE"] || 0,
   },
@@ -1177,6 +1311,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a142",
     name: "MUM CHAMPAGNE ICE",
     category: "🥂 Vinos y espumosos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["MUM CHAMPAGNE ICE"] || 0,
   },
@@ -1184,6 +1319,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a143",
     name: "MOET CHANDON BRUT",
     category: "🥂 Vinos y espumosos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["MOET CHANDON BRUT"] || 0,
   },
@@ -1191,6 +1327,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a144",
     name: "MOET CHANDON ROSE",
     category: "🥂 Vinos y espumosos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["MOET CHANDON ROSE"] || 0,
   },
@@ -1198,6 +1335,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a145",
     name: "MOET CHANDON ICE",
     category: "🥂 Vinos y espumosos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["MOET CHANDON ICE"] || 0,
   },
@@ -1205,6 +1343,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a146",
     name: "VEUVE CLICQUOT",
     category: "🥂 Vinos y espumosos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["VEUVE CLICQUOT"] || 0,
   },
@@ -1212,14 +1351,15 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a147",
     name: "DOM PERIGNON",
     category: "🥂 Vinos y espumosos",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["DOM PERIGNON"] || 0,
   },
-  // Refrescos y agua
   {
     id: "a148",
     name: "Agua con Gas",
     category: "🥤Refrescos y agua",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Agua con Gas"] || 0,
   },
@@ -1227,6 +1367,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a149",
     name: "Agua sin gas 33",
     category: "🥤Refrescos y agua",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Agua sin gas 33"] || 0,
   },
@@ -1234,6 +1375,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a150",
     name: "Agua con gas 75",
     category: "🥤Refrescos y agua",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Agua con gas 75"] || 0,
   },
@@ -1241,6 +1383,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a151",
     name: "Aquabona 33",
     category: "🥤Refrescos y agua",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Aquabona 33"] || 0,
   },
@@ -1248,6 +1391,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a152",
     name: "Aquabona 75",
     category: "🥤Refrescos y agua",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Aquabona 75"] || 0,
   },
@@ -1255,6 +1399,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a153",
     name: "Aquarius",
     category: "🥤Refrescos y agua",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Aquarius"] || 0,
   },
@@ -1262,6 +1407,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a154",
     name: "Aquarius Naranja",
     category: "🥤Refrescos y agua",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Aquarius Naranja"] || 0,
   },
@@ -1269,6 +1415,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a155",
     name: "Arandanos 1 Lt",
     category: "🥤Refrescos y agua",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Arandanos 1 Lt"] || 0,
   },
@@ -1276,6 +1423,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a156",
     name: "Bitter Kas",
     category: "🥤Refrescos y agua",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Bitter Kas"] || 0,
   },
@@ -1283,13 +1431,15 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a157",
     name: "Coca Cola",
     category: "🥤Refrescos y agua",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
-    pricePerUnitWithoutIVA: userPrices["Coca Cola"] || 0, // AÑADIDO: Ahora tiene precio
+    pricePerUnitWithoutIVA: userPrices["Coca Cola"] || 0,
   },
   {
     id: "a158",
     name: "Coca Cola Zero",
     category: "🥤Refrescos y agua",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Coca Cola Zero"] || 0,
   },
@@ -1297,6 +1447,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a159",
     name: "Granini Naranja 1 Lt",
     category: "🥤Refrescos y agua",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Granini Naranja 1 Lt"] || 0,
   },
@@ -1304,6 +1455,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a160",
     name: "Lipton",
     category: "🥤Refrescos y agua",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Lipton"] || 0,
   },
@@ -1311,6 +1463,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a161",
     name: "Minute Maid Tomate",
     category: "🥤Refrescos y agua",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Minute Maid Tomate"] || 0,
   },
@@ -1318,6 +1471,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a162",
     name: "Minute Maid Naranja",
     category: "🥤Refrescos y agua",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Minute Maid Naranja"] || 0,
   },
@@ -1325,6 +1479,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a163",
     name: "Minute Maid Piña",
     category: "🥤Refrescos y agua",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Minute Maid Piña"] || 0,
   },
@@ -1332,6 +1487,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a164",
     name: "Red Bull",
     category: "🥤Refrescos y agua",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Red Bull"] || 0,
   },
@@ -1339,6 +1495,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a165",
     name: "Red Bull Sin Azucar",
     category: "🥤Refrescos y agua",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Red Bull Sin Azucar"] || 0,
   },
@@ -1346,6 +1503,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a166",
     name: "Red Bull Rojo",
     category: "🥤Refrescos y agua",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Red Bull Rojo"] || 0,
   },
@@ -1353,6 +1511,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a167",
     name: "Pepsi",
     category: "🥤Refrescos y agua",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Pepsi"] || 0,
   },
@@ -1360,13 +1519,15 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a168",
     name: "Pepsi sin azucar",
     category: "🥤Refrescos y agua",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
-    pricePerUnitWithoutIVA: userPrices["Pepsi sin azucar"] || 0, // AÑADIDO: Ahora tiene precio
+    pricePerUnitWithoutIVA: userPrices["Pepsi sin azucar"] || 0,
   },
   {
     id: "a169",
     name: "Pomelo 1 Lt",
     category: "🥤Refrescos y agua",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Pomelo 1 Lt"] || 0,
   },
@@ -1374,6 +1535,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a170",
     name: "Schweppes Ginger Ale",
     category: "🥤Refrescos y agua",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Schweppes Ginger Ale"] || 0,
   },
@@ -1381,6 +1543,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a171",
     name: "Schweppes Ginger Beer",
     category: "🥤Refrescos y agua",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Schweppes Ginger Beer"] || 0,
   },
@@ -1388,6 +1551,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a172",
     name: "Schweppes Limon",
     category: "🥤Refrescos y agua",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Schweppes Limon"] || 0,
   },
@@ -1395,6 +1559,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a173",
     name: "Schweppes Naranja",
     category: "🥤Refrescos y agua",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Schweppes Naranja"] || 0,
   },
@@ -1402,6 +1567,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a174",
     name: "Schweppes Pomelo",
     category: "🥤Refrescos y agua",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Schweppes Pomelo"] || 0,
   },
@@ -1409,6 +1575,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a175",
     name: "Schweppes Soda",
     category: "🥤Refrescos y agua",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Schweppes Soda"] || 0,
   },
@@ -1416,6 +1583,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a176",
     name: "Schweppes Tonica",
     category: "🥤Refrescos y agua",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Schweppes Tonica"] || 0,
   },
@@ -1423,6 +1591,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a177",
     name: "Schweppes Tonica 0%",
     category: "🥤Refrescos y agua",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Schweppes Tonica 0%"] || 0,
   },
@@ -1430,6 +1599,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a178",
     name: "Sprite",
     category: "🥤Refrescos y agua",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Sprite"] || 0,
   },
@@ -1437,6 +1607,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a179",
     name: "Tomate 1 Lt",
     category: "🥤Refrescos y agua",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Tomate 1 Lt"] || 0,
   },
@@ -1444,14 +1615,15 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a180",
     name: "7up",
     category: "🥤Refrescos y agua",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["7up"] || 0,
   },
-  // Cerveza
   {
     id: "a181",
     name: "Moritz 7",
     category: "🍻 Cerveza",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Moritz 7"] || 0,
   },
@@ -1459,6 +1631,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a182",
     name: "Moritz EPIDOR",
     category: "🍻 Cerveza",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Moritz EPIDOR"] || 0,
   },
@@ -1466,6 +1639,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a183",
     name: "Moritz 0%",
     category: "🍻 Cerveza",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Moritz 0%"] || 0,
   },
@@ -1473,6 +1647,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a184",
     name: "Ambar Gluten free",
     category: "🍻 Cerveza",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Ambar Gluten free"] || 0,
   },
@@ -1480,6 +1655,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a185",
     name: "Ambar Triple 0 Tostada",
     category: "🍻 Cerveza",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Ambar Triple 0 Tostada"] || 0,
   },
@@ -1487,6 +1663,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a186",
     name: "Barril Moritz 30Lt",
     category: "🍻 Cerveza",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Barril Moritz 30Lt"] || 0,
   },
@@ -1494,6 +1671,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a187",
     name: "Barril Moritz Radler 30 Lt",
     category: "🍻 Cerveza",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["Barril Moritz Radler 30 Lt"] || 0,
   },
@@ -1501,15 +1679,15 @@ const initialInventoryItems: InventoryItem[] = [
     id: "a188",
     name: "BARRIL 500LT",
     category: "🍻 Cerveza",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: userPrices["BARRIL 500LT"] || 0,
   },
-
-  // Material y Menaje
   {
     id: "m1",
     name: "Vasos",
     category: "🥛 Material",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: 0,
   },
@@ -1517,6 +1695,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "m2",
     name: "Chupitos",
     category: "🥛 Material",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: 0,
   },
@@ -1524,6 +1703,7 @@ const initialInventoryItems: InventoryItem[] = [
     id: "m3",
     name: "Pajitas",
     category: "🥛 Material",
+    barcode: "",
     stockByLocation: createInitialStockObject(0),
     pricePerUnitWithoutIVA: 0,
   },
@@ -1559,14 +1739,12 @@ const App: React.FC = () => {
   const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>(
     initialPurchaseOrders
   );
-  // Eliminamos la carga de historial de localStorage, ya que ahora usamos la API
+
   const [inventoryHistory, setInventoryHistory] = useState<InventoryRecord[]>(
     []
   );
 
   // --- EFECTOS DE PERSISTENCIA (LocalStorage) ---
-  // Se deja el useEffect para persistir localmente el historial (aunque ya está en la API,
-  // es un fallback o mejora de rendimiento local)
   useEffect(() => {
     try {
       localStorage.setItem(
@@ -1579,7 +1757,6 @@ const App: React.FC = () => {
   }, [inventoryHistory]);
 
   // --- CÁLCULOS Y HELPERS ---
-  // 🛑 'history' RESTAURADO
   const navItemsFull: { id: View; label: string }[] = [
     { id: "inventory", label: "Inventario" },
     { id: "orders", label: "Pedidos" },
@@ -1635,18 +1812,40 @@ const App: React.FC = () => {
   );
 
   // 🛑 CORRECCIÓN 1: Implementación de handlers de Inventario para la API
-  const handleSaveInventoryItem = useCallback(
-    async (item: InventoryItem) => {
-      try {
-        const savedItem = await api.inventory.save(item);
-        addOrUpdate(setInventoryItems, savedItem as InventoryItem);
-      } catch (e) {
-        console.error("Error saving inventory item:", e);
-        alert(`Error al guardar el artículo: ${(e as Error).message}`);
-      }
-    },
-    [addOrUpdate]
-  );
+  const handleSaveInventoryItem = useCallback(async (item: InventoryItem) => {
+    try {
+      const barcodeAsNumber = item.barcode
+        ? parseInt(String(item.barcode).replace(/\s/g, ""), 10)
+        : 0;
+
+      const itemToSave = {
+        ...item,
+        barcode: isNaN(barcodeAsNumber) ? 0 : barcodeAsNumber,
+      };
+
+      console.log(
+        "📤 Enviando a MongoDB (Barcode como número):",
+        itemToSave.barcode
+      );
+
+      const savedItem = await api.inventory.save(itemToSave);
+
+      setInventoryItems((prevItems) => {
+        const exists = prevItems.find(
+          (i) => i.id === (savedItem as InventoryItem).id
+        );
+        return exists
+          ? prevItems.map((i) =>
+              i.id === (savedItem as InventoryItem).id
+                ? (savedItem as InventoryItem)
+                : i
+            )
+          : [savedItem as InventoryItem, ...prevItems];
+      });
+    } catch (e) {
+      console.error("❌ Error al guardar en el servidor:", e);
+    }
+  }, []);
 
   const handleDeleteInventoryItem = useCallback(
     async (id: string) => {
@@ -1661,6 +1860,26 @@ const App: React.FC = () => {
     [deleteItem]
   );
 
+  const onSaveInventoryItem = (updatedItem: InventoryItem) => {
+    const sanitizedItem = {
+      ...updatedItem,
+      barcode: String(updatedItem.barcode || "").trim(),
+    };
+    // 1. Actualizamos el estado de React
+    setInventoryItems((prevItems) => {
+      const exists = prevItems.find((item) => item.id === updatedItem.id);
+      if (exists) {
+        // Reemplazamos el viejo por el nuevo (con su nuevo barcode)
+        return prevItems.map((item) =>
+          item.id === updatedItem.id ? updatedItem : item
+        );
+      }
+      // Si es un producto totalmente nuevo del escáner, lo añadimos a la lista
+      return [...prevItems, updatedItem];
+    });
+
+    api.inventory.save(updatedItem);
+  };
   // --- API Handlers para Pedidos (Mantenidos) ---
   const handleSavePurchaseOrder = useCallback(
     async (order: PurchaseOrder) => {
@@ -1684,7 +1903,6 @@ const App: React.FC = () => {
           errorMessage = e.message;
         }
 
-        // Muestra la alerta con el mensaje detallado
         alert(`Error al guardar el pedido: ${errorMessage}`);
       }
     },
@@ -1730,11 +1948,11 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // NUEVO: API Handler para Borrar un Registro Individual del Historial
+  // API Handler para Borrar un Registro Individual del Historial
   const handleDeleteInventoryRecord = useCallback(
     async (id: string) => {
       try {
-        await api.history.delete(id); // Llama a la nueva función API
+        await api.history.delete(id);
         deleteItem(setInventoryHistory, id);
       } catch (e) {
         console.error("Error deleting history record:", e);
@@ -1748,14 +1966,11 @@ const App: React.FC = () => {
     [deleteItem]
   );
 
-  // 🛑 CORRECCIÓN 2: Guarda el registro en la API (MongoDB)
+  // Guarda el registro en la API (MongoDB)
   const handleSaveInventoryRecord = useCallback(
     async (record: InventoryRecord) => {
       try {
-        // 1. Guardar el registro en la API (MongoDB)
         const savedRecord = await api.history.save(record);
-
-        // 2. Actualizar el estado local con la respuesta de la API
         addOrUpdate(setInventoryHistory, savedRecord as InventoryRecord);
       } catch (e) {
         console.error("Error saving inventory record:", e);
@@ -1797,7 +2012,6 @@ const App: React.FC = () => {
       const updateMap = new Map(
         updates.map((u) => [u.name.toLowerCase(), u.stock])
       );
-      // Definir zeroedStock aquí para uso local
       const zeroedStock = INVENTORY_LOCATIONS.reduce(
         (acc, loc) => ({ ...acc, [loc]: 0 }),
         {}
@@ -1811,29 +2025,20 @@ const App: React.FC = () => {
           if (!updateItem) return item;
 
           const newStockValue = updateItem.stock;
-
-          // Caso 1: Reset completo (stock: 0 y mode: 'set' desde el botón Reset o Análisis)
           if (mode === "set" && newStockValue === 0) {
-            // Si la intención es resetear, borramos todo en todas las ubicaciones.
             return { ...item, stockByLocation: zeroedStock };
           }
-
-          // Caso 2: Actualización de stock (se asume que los updates externos siempre se dirigen a 'Almacén')
 
           const currentStockInAlmacen = item.stockByLocation["Almacén"] || 0;
           let finalStock;
 
           if (mode === "set") {
-            // Reemplaza el stock existente en Almacén
             finalStock = newStockValue;
           } else {
-            // Añade al stock existente en Almacén
             finalStock = currentStockInAlmacen + newStockValue;
           }
 
-          // 🛑 LÓGICA CORRECTA: Preservar el stock de todas las demás ubicaciones (Rest, B1, Nevera, etc.)
-          // Solo actualizamos "Almacén". Esto asegura que las ubicaciones introducidas manualmente
-          // a través de la tabla se mantengan hasta el próximo reset.
+          // Preservar el stock de todas las demás ubicaciones (Rest, B1, Nevera, etc.)
           const newStockByLocation = {
             ...item.stockByLocation,
             Almacén: finalStock,
@@ -1842,7 +2047,6 @@ const App: React.FC = () => {
         });
       });
 
-      // 💥 AÑADIDO: Llamar a la API para persistir el cambio en el servidor
       const updatesWithMode = updates.map((u) => ({ ...u, mode }));
       try {
         await api.inventory.bulkUpdate(updatesWithMode);
@@ -1856,7 +2060,7 @@ const App: React.FC = () => {
     []
   );
 
-  // --- FUNCIÓN DE UTILIDAD: Resetear a 0 el stock FÍSICO (Definida en App.tsx) ---
+  // --- FUNCIÓN DE UTILIDAD: Resetear a 0 el stock FÍSICO
   const handleResetInventoryStocks = useCallback(() => {
     if (
       !window.confirm(
@@ -1879,10 +2083,9 @@ const App: React.FC = () => {
     }
   }, [inventoryItems, handleBulkUpdateInventoryItems]);
 
-  // 🛑 CORRECCIÓN 3: Carga inicial de datos y Lógica de Siembra de Inventario
+  // Carga inicial de datos y Lógica de Siembra de Inventario
   useEffect(() => {
     const loadInitialData = async () => {
-      // 1. Crear mapa de precios locales
       const itemPriceMap = new Map(
         initialInventoryItems.map((item) => [
           item.id,
@@ -1891,39 +2094,48 @@ const App: React.FC = () => {
       );
 
       try {
-        // 2. Fetch Inventory Items
         const items = (await api.inventory.list()) as InventoryItem[];
-        let finalItems = items;
+        let finalItems = items.map((item) => ({
+          ...item,
+          barcode: item.barcode ? String(item.barcode).trim() : "",
+        }));
 
         if (items.length === 0) {
-          // SEEDING LOGIC: Si la DB está vacía, guarda todo
           console.log("Database is empty. Seeding initial inventory...");
           const seedPromises = initialInventoryItems.map((item) =>
             api.inventory.save(item)
           );
-          finalItems = (await Promise.all(seedPromises)) as InventoryItem[];
+
+          const seededResults = (await Promise.all(
+            seedPromises
+          )) as InventoryItem[];
+          finalItems = seededResults.map((item) => ({
+            ...item,
+            barcode: item.barcode ? String(item.barcode).trim() : "",
+          }));
         } else {
-          // --- 🚀 NUEVA LÓGICA: Sincronización de Material Faltante ---
-          // Buscamos los artículos que tengan la categoría "🥛 Material" en tu lista local
           const materialToSync = initialInventoryItems.filter(
             (i) => i.category === "🥛 Material"
           );
 
           for (const materialItem of materialToSync) {
-            // Si el nombre no existe en los items que vienen de la base de datos, lo guardamos
-            const exists = items.some(
+            const exists = finalItems.some(
               (dbItem) => dbItem.name === materialItem.name
             );
             if (!exists) {
               console.log(`Sincronizando artículo nuevo: ${materialItem.name}`);
               const savedItem = await api.inventory.save(materialItem);
-              items.push(savedItem as InventoryItem); // Lo añadimos a la lista actual
+              finalItems.push({
+                ...(savedItem as InventoryItem),
+                barcode: (savedItem as InventoryItem).barcode
+                  ? String((savedItem as InventoryItem).barcode).trim()
+                  : "",
+              });
             }
           }
-          // -----------------------------------------------------------
 
-          // Fusionar precios locales con datos cargados de la DB
-          finalItems = items.map((item) => {
+          // Fusionar precios locales con datos de la DB
+          finalItems = finalItems.map((item) => {
             const seedPrice = itemPriceMap.get(item.id);
             if (
               seedPrice !== undefined &&
@@ -1938,11 +2150,9 @@ const App: React.FC = () => {
 
         setInventoryItems(finalItems);
 
-        // 3. Fetch Purchase Orders
         const orders = (await api.orders.list()) as PurchaseOrder[];
         setPurchaseOrders(orders);
 
-        // 4. Fetch Inventory History
         const history = (await api.history.list()) as InventoryRecord[];
         setInventoryHistory(history);
       } catch (e) {
@@ -1955,25 +2165,24 @@ const App: React.FC = () => {
       }
     };
     loadInitialData();
-  }, [initialInventoryItems]); // Eliminamos addOrUpdate de dependencias si no se usa dentro
+  }, [initialInventoryItems]);
 
   const renderContent = () => {
-    // Solo renderiza el componente de Inventario
     return (
       <InventoryComponent
         inventoryItems={inventoryItems}
         purchaseOrders={purchaseOrders}
         suppliers={uniqueSuppliers}
-        onSaveInventoryItem={handleSaveInventoryItem} // 🛑 CORREGIDO: Usar el handler con API
-        onDeleteInventoryItem={handleDeleteInventoryItem} // 🛑 CORREGIDO: Usar el handler con API
+        onSaveInventoryItem={handleSaveInventoryItem}
+        onDeleteInventoryItem={handleDeleteInventoryItem}
         onSavePurchaseOrder={handleSavePurchaseOrder}
         onDeletePurchaseOrder={handleDeletePurchaseOrder}
         onBulkUpdateInventoryItems={handleBulkUpdateInventoryItems}
         inventoryHistory={inventoryHistory}
         onSaveInventoryRecord={handleSaveInventoryRecord}
         onDeleteAllInventoryRecords={handleDeleteAllHistoryRecords}
-        onDeleteInventoryRecord={handleDeleteInventoryRecord} // <-- AÑADIDO: Se pasa el nuevo handler
-        onDownloadHistoryRecord={handleDownloadHistoryRecord} // PASADO
+        onDeleteInventoryRecord={handleDeleteInventoryRecord}
+        onDownloadHistoryRecord={handleDownloadHistoryRecord}
         activeTab={activeView}
         formatUTCToLocal={formatUTCToLocal}
         handleResetInventoryStocks={handleResetInventoryStocks}
@@ -1990,12 +2199,10 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-900 flex flex-col">
-      {/* 🛑 SECCIÓN 1: Cabecera Principal (Altura: 64px) */}
       <header className="sticky top-0 z-[60] bg-slate-900 border-b border-slate-800 shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {" "}
-            {/* h-16 = 64px */}
             <div className="flex-shrink-0 text-violet-400 font-bold text-xl">
               Control de Stock y Pedidos
             </div>

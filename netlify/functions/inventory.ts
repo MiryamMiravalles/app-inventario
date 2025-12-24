@@ -44,39 +44,42 @@ export const handler: Handler = async (event, context) => {
     const collection = InventoryItemModel;
     const ObjectId = mongoose.Types.ObjectId;
 
+    // --- OBTENER INVENTARIO ---
     if (event.httpMethod === "GET") {
       const items = await (collection.find as any)().sort({ name: 1 });
       return { statusCode: 200, headers, body: JSON.stringify(items) };
     }
 
+    // --- GUARDAR O ACTUALIZAR PRODUCTO (Barcode incluido) ---
     if (event.httpMethod === "POST") {
       const data = JSON.parse(event.body || "{}");
-      const { stockByLocation, ...restOfItem } = data;
+
+      // LOG DE SEGURIDAD: Esto aparecerá en los logs de Netlify
+      console.log("DATOS RECIBIDOS EN SERVIDOR:", data);
+
+      const { stockByLocation, barcode, ...restOfItem } = data;
 
       const itemId = restOfItem.id || new ObjectId().toHexString();
-      restOfItem.id = itemId;
 
       const existingItem = await (collection.findOne as any)({ id: itemId });
       const queryKey = existingItem
         ? { _id: existingItem._id }
         : { id: itemId };
 
-      const updatePayload: any = { ...restOfItem };
+      // Construimos el updatePayload asegurando que barcode exista
+      const updatePayload: any = {
+        ...restOfItem,
+        id: itemId,
+        barcode: barcode || restOfItem.barcode || "", // Doble comprobación
+      };
 
-      // 🛑 CORRECCIÓN: Procesar stockByLocation asegurando tipos y guardando valores
       if (stockByLocation && typeof stockByLocation === "object") {
         Object.entries(stockByLocation).forEach(([key, value]) => {
-          let numericValue = 0;
-
-          if (typeof value === "string") {
-            // Convertimos string (ej: "0,5") a número limpio
-            numericValue = parseFloat(value.replace(",", ".")) || 0;
-          } else if (typeof value === "number") {
-            numericValue = value;
-          }
-
-          // 🛑 ASIGNACIÓN: Usamos notación de puntos para actualizar el Map interno en MongoDB
-          updatePayload[`stockByLocation.${key}`] = numericValue;
+          let numericValue =
+            typeof value === "string"
+              ? parseFloat(value.replace(",", "."))
+              : Number(value);
+          updatePayload[`stockByLocation.${key}`] = numericValue || 0;
         });
       }
 
@@ -86,9 +89,6 @@ export const handler: Handler = async (event, context) => {
         { new: true, upsert: true, runValidators: true }
       );
 
-      console.log(
-        `Inventory item processed successfully: ${updatedOrNewItem.id}`
-      );
       return {
         statusCode: 201,
         headers,
@@ -96,6 +96,7 @@ export const handler: Handler = async (event, context) => {
       };
     }
 
+    // --- ACTUALIZACIÓN MASIVA (Bulk Update) ---
     if (event.httpMethod === "PUT") {
       const updates: BulkUpdateItem[] = JSON.parse(event.body || "[]");
 
@@ -107,6 +108,7 @@ export const handler: Handler = async (event, context) => {
         if (!existingItem) return;
 
         let newStockValue = inputStock;
+
         // Acceso seguro al stock actual en Almacén
         const currentStockInAlmacen =
           existingItem.stockByLocation instanceof Map
@@ -116,7 +118,8 @@ export const handler: Handler = async (event, context) => {
         if (mode === "add") {
           newStockValue = currentStockInAlmacen + inputStock;
         } else if (mode === "set") {
-          newStockValue = inputStock === 0 ? currentStockInAlmacen : inputStock;
+          // Si el modo es 'set', guardamos el valor de entrada (usualmente para resetear a 0)
+          newStockValue = inputStock;
         }
 
         await (collection.updateOne as any)(
@@ -136,6 +139,7 @@ export const handler: Handler = async (event, context) => {
       };
     }
 
+    // --- ELIMINAR PRODUCTO ---
     if (event.httpMethod === "DELETE") {
       const { id } = event.queryStringParameters || {};
       await (collection.deleteOne as any)({ id });

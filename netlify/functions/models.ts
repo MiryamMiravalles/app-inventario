@@ -7,19 +7,13 @@ import mongoose, { Schema } from "mongoose";
 
 const InventoryItemSchema = new Schema(
   {
-    // 🛑 CORRECCIÓN CLAVE 1: Mantenemos el campo 'id' como el ID principal del documento
-    // y lo usamos como el campo que el frontend genera (UUID).
     id: { type: String, required: true, unique: true, index: true },
     name: { type: String, required: true },
     category: String,
+    barcode: { type: String, default: 0 },
     pricePerUnitWithoutIVA: { type: Number, required: false, default: 0 },
-    // 🛑 CORRECCIÓN CLAVE 2: Añadir `minimize: false` para Map.
-    // Esto asegura que el Map `stockByLocation` no se elimine si está vacío,
-    // previniendo errores de actualización sutiles en Mongoose.
     stockByLocation: { type: Map, of: Number, minimize: false },
   },
-  // 🛑 CORRECCIÓN CLAVE 3: Mantenemos { timestamps: true } y permitimos que Mongoose
-  // cree su propio _id (ObjectId), usando el campo 'id' para el UUID del frontend.
   { timestamps: true }
 );
 
@@ -71,13 +65,14 @@ const InventoryRecordItemSchema = new Schema(
     itemId: String,
     name: String,
     category: String,
-    pricePerUnitWithoutIVA: Number, // 🛑 AÑADIDO: Precio para el historial de análisis/snapshot
+    barcode: String,
+    pricePerUnitWithoutIVA: Number,
     currentStock: Number,
     pendingStock: Number,
     initialStock: Number,
     endStock: Number,
     consumption: Number,
-    stockByLocationSnapshot: { type: Map, of: Number, minimize: false }, // 🛑 Añadido minimize: false
+    stockByLocationSnapshot: { type: Map, of: Number, minimize: false },
   },
   { _id: false } // Mantenido para sub-documentos si no se usa ID
 );

@@ -59,6 +59,7 @@ interface InventoryProps {
 const emptyInventoryItem: Omit<InventoryItem, "id" | "stockByLocation"> = {
   name: "",
   category: "",
+  barcode: "",
   pricePerUnitWithoutIVA: 0,
 };
 
@@ -72,7 +73,6 @@ const emptyPurchaseOrder: Omit<PurchaseOrder, "id"> = {
 
 const parseDecimal = (input: string): number => {
   if (typeof input !== "string" || !input) return 0;
-  // Aseguramos que solo haya puntos para que parseFloat funcione.
   const sanitized = input.replace(",", ".");
   const number = parseFloat(sanitized);
   return isNaN(number) ? 0 : number;
@@ -114,7 +114,6 @@ const CATEGORY_ORDER = [
 ];
 
 // --- Local Component: CategoryAccordion (Se mantiene) ---
-
 interface CategoryAccordionProps {
   title: string;
   children: React.ReactNode;
@@ -128,17 +127,14 @@ const calculateOrderTotal = (
   inventoryItems: InventoryItem[]
 ): number => {
   return order.items.reduce((total, item) => {
-    // Obtenemos el precio unitario del artículo correspondiente en el inventario actual
     const itemDetail = inventoryItems.find(
       (i) => i.id === item.inventoryItemId
     );
-    // Usamos el precio del inventario, ya que el precio en OrderItem no se mantiene actualizado en este flujo.
     const price = itemDetail?.pricePerUnitWithoutIVA || 0;
     return total + item.quantity * price;
   }, 0);
 };
 
-// --- COMPONENTE: Calculadora de Cajas Vacías (Versión Mediana a la Izquierda) ---
 // 1. Tipos de datos
 interface BoxCounts {
   schweppes: number;
@@ -157,7 +153,7 @@ interface CalculatorRowProps {
   setBoxCounts: React.Dispatch<React.SetStateAction<BoxCounts>>;
 }
 
-// 2. Componente de fila (Fuera para no perder el foco del teclado)
+// 2. Componente de fila
 const CalculatorRow = ({
   label,
   multiplier,
@@ -176,7 +172,6 @@ const CalculatorRow = ({
         <input
           type="number"
           min="0"
-          // Muestra vacío si es 0 para facilitar la escritura rápida
           value={boxCounts[field] === 0 ? "" : boxCounts[field]}
           onChange={(e) => {
             const val =
@@ -198,7 +193,6 @@ const EmptyBoxesCalculator: React.FC<{
   inventoryItems: InventoryItem[];
   onSaveInventoryItem: (item: InventoryItem) => void;
 }> = ({ inventoryItems, onSaveInventoryItem }) => {
-  // Mantenemos tu lógica de carga desde localStorage
   const [boxCounts, setBoxCounts] = useState<BoxCounts>(() => {
     const saved = localStorage.getItem("boxCounts_persistence");
     return saved
@@ -213,8 +207,6 @@ const EmptyBoxesCalculator: React.FC<{
         };
   });
 
-  // 🛑 IMPORTANTE: Este Effect asegura que si los datos en localStorage
-  // cambian (vía Reset), la calculadora se ponga a cero visualmente.
   useEffect(() => {
     const handleStorageChange = () => {
       const saved = localStorage.getItem("boxCounts_persistence");
@@ -358,10 +350,9 @@ const CategoryAccordion: React.FC<CategoryAccordionProps> = ({
   );
 };
 
-// 🛑 WeeklyConsumptionAnalysis RESTAURADO Y MODIFICADO
 interface WeeklyConsumptionAnalysisProps {
   inventoryHistory: InventoryRecord[];
-  inventoryItems: InventoryItem[]; // AÑADIDO
+  inventoryItems: InventoryItem[];
   formatUTCToLocal: (utcDateString: string | Date | undefined) => string;
 }
 
@@ -395,7 +386,7 @@ const WeeklyConsumptionAnalysis: React.FC<WeeklyConsumptionAnalysisProps> = ({
     ? lastRecord.items.filter((item) => (item.consumption || 0) > 0.001)
     : [];
 
-  // NUEVA LÓGICA DE AGRUPACIÓN Y ORDENACIÓN
+  // LÓGICA DE AGRUPACIÓN Y ORDENACIÓN
   const groupedConsumption = useMemo(() => {
     type DetailedConsumptionItem = InventoryRecordItem & { category: string };
 
@@ -427,7 +418,6 @@ const WeeklyConsumptionAnalysis: React.FC<WeeklyConsumptionAnalysisProps> = ({
       return catA.localeCompare(catB);
     });
   }, [consumptionItems, inventoryItems]);
-  // FIN NUEVA LÓGICA
 
   return (
     <div className="bg-gray-800 shadow-xl rounded-lg overflow-x-auto p-4 mb-6">
@@ -438,7 +428,6 @@ const WeeklyConsumptionAnalysis: React.FC<WeeklyConsumptionAnalysisProps> = ({
         </h2>
       </div>
       {consumptionItems.length > 0 ? (
-        // REEMPLAZO DE LA TABLA PLANA POR ACORDEONES AGRUPADOS
         <div className="space-y-3 mt-4">
           {groupedConsumption.map(([category, items]) => (
             <CategoryAccordion
@@ -491,7 +480,7 @@ const compressImage = (base64Str: string): Promise<string> => {
     img.src = "data:image/jpeg;base64," + base64Str;
     img.onload = () => {
       const canvas = document.createElement("canvas");
-      const MAX_WIDTH = 1200; // Resolución suficiente para que la IA lea texto
+      const MAX_WIDTH = 1200;
       let width = img.width;
       let height = img.height;
 
@@ -503,7 +492,6 @@ const compressImage = (base64Str: string): Promise<string> => {
       canvas.height = height;
       const ctx = canvas.getContext("2d");
       ctx?.drawImage(img, 0, 0, width, height);
-      // Reducimos calidad al 70% para que pese muy poco y no de Timeout
       resolve(canvas.toDataURL("image/jpeg", 0.7).split(",")[1]);
     };
   });
@@ -564,12 +552,11 @@ const InventoryComponent: React.FC<InventoryProps> = ({
   >("all");
   // Localiza donde se recibe el nombre del proveedor de la foto
   const processOcrResult = (detectedSupplier: string) => {
-    // Aplicamos el formato: "vins avinyo" -> "Vins Avinyo"
     const formattedSupplier = formatToTitleCase(detectedSupplier);
 
     setCurrentPurchaseOrder((prev) => ({
       ...prev,
-      supplierName: formattedSupplier, // Ahora se guarda ya formateado
+      supplierName: formattedSupplier,
     }));
   };
 
@@ -600,16 +587,13 @@ const InventoryComponent: React.FC<InventoryProps> = ({
             const lineTotalNet = cleanNumber(detected.linePrice);
             const qty = Number(detected.quantity) || 0;
 
-            // 🛑 PRECISIÓN: Calculamos el precio unitario.
-            // Usamos toFixed(4) y volvemos a número para tener hasta 4 decimales si es necesario.
-            // Esto es clave para productos como la Moritz donde el precio real es 0.6733
             const unitPriceNet =
               qty > 0 ? Number((lineTotalNet / qty).toFixed(4)) : 0;
 
             return {
               inventoryItemId: found.id,
               quantity: qty,
-              costAtTimeOfPurchase: unitPriceNet, // Para el histórico
+              costAtTimeOfPurchase: unitPriceNet,
               pricePerUnitWithoutIVA: unitPriceNet,
             };
           }
@@ -617,15 +601,13 @@ const InventoryComponent: React.FC<InventoryProps> = ({
         })
         .filter(Boolean);
 
-      // Mantenemos el total exacto del papel
       const totalPapel = cleanNumber(data.totalAmount);
       const rawSupplier = data.supplierName || "Vins Avinyó";
       const formattedSupplier = formatToTitleCase(rawSupplier);
 
-      // 3. Abrimos el modal con los datos ya limpios
       openOrderModal({
         orderDate: data.orderDate || new Date().toISOString().split("T")[0],
-        supplierName: formattedSupplier, // 👈 Aquí pasamos el nombre corregido
+        supplierName: formattedSupplier,
         items: matchedItems,
         status: PurchaseOrderStatus.Pending,
         totalAmount: totalPapel,
@@ -692,73 +674,145 @@ const InventoryComponent: React.FC<InventoryProps> = ({
   }, []);
 
   const handleBarcodeScan = (decodedText: string) => {
-    // 1. Activar el recuadro verde en el contenedor
     const container = document.getElementById("scanner-container");
-    if (container) {
-      container.classList.add("scan-success-border");
-    }
+    if (container) container.classList.add("scan-success-border");
 
-    // 2. PITIDO PROFESIONAL (Audio Context)
-    try {
-      const audioCtx = new (window.AudioContext ||
-        (window as any).webkitAudioContext)();
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
+    if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
 
-      osc.type = "sine"; // Sonido puro
-      osc.frequency.setValueAtTime(900, audioCtx.currentTime); // Tono agudo (900Hz)
+    setTimeout(async () => {
+      const scannedBarcode = String(decodedText).trim();
 
-      gain.gain.setValueAtTime(0, audioCtx.currentTime);
-      gain.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.01); // Ataque rápido
-      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15); // Decaimiento suave
+      // 2. Buscamos si el producto ya existe en el inventario
+      let item = inventoryItems.find(
+        (i) => String(i.barcode || "").trim() === scannedBarcode
+      );
 
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
+      // 3. Si NO existe, entramos en el flujo de Vinculación o Creación
+      if (!item) {
+        const wantsToLink = window.confirm(
+          `❓ CÓDIGO NUEVO: ${scannedBarcode}\n\nEste código no tiene producto asignado. ¿Quieres vincularlo a uno que YA EXISTE?`
+        );
 
-      osc.start();
-      osc.stop(audioCtx.currentTime + 0.15);
-    } catch (e) {
-      console.error("El navegador bloqueó el audio inicial:", e);
-    }
+        if (wantsToLink) {
+          // VINCULAR A EXISTENTE
+          const searchName = window.prompt(
+            "Escribe el nombre del producto para buscarlo:"
+          );
+          if (!searchName) {
+            setIsScannerOpen(false);
+            return;
+          }
 
-    // 3. VIBRACIÓN DOBLE (Estilo Industrial)
-    if (navigator.vibrate) {
-      // Patrón: Vibración corta, pausa, vibración corta
-      navigator.vibrate([100, 50, 100]);
-    }
+          const matches = inventoryItems.filter((i) =>
+            i.name.toLowerCase().includes(searchName.toLowerCase())
+          );
 
-    console.log("Código detectado:", decodedText);
+          if (matches.length === 0) {
+            alert("No se encontró ningún producto.");
+            setIsScannerOpen(false);
+            return;
+          }
 
-    // 4. PAUSA DE PROCESAMIENTO
-    setTimeout(() => {
-      const item = inventoryItems.find((i) => i.barcode === decodedText);
+          const selectionMsg = matches
+            .slice(0, 15)
+            .map((i, idx) => `${idx + 1}. ${i.name}`)
+            .join("\n");
+          const selection = window.prompt(
+            `Selecciona el producto:\n${selectionMsg}`,
+            "1"
+          );
 
+          if (selection) {
+            const selectedItem = matches[parseInt(selection) - 1];
+            if (selectedItem) {
+              // Creamos la versión con el nuevo barcode
+              item = { ...selectedItem, barcode: scannedBarcode };
+              // Guardamos la vinculación en la DB
+              onSaveInventoryItem(item);
+            }
+          }
+        } else {
+          // CREAR PRODUCTO TOTALMENTE NUEVO
+          const confirmCreate = window.confirm(
+            "¿Deseas dar de alta este producto como uno nuevo?"
+          );
+          if (confirmCreate) {
+            const newName = window.prompt("Nombre del nuevo producto:");
+            if (newName) {
+              const catIndex = window.prompt(
+                `Selecciona CATEGORÍA:\n` +
+                  CATEGORY_ORDER.map((c, i) => `${i + 1}. ${c}`).join("\n"),
+                "1"
+              );
+              const selectedCat =
+                CATEGORY_ORDER[parseInt(catIndex || "1") - 1] ||
+                CATEGORY_ORDER[0];
+
+              const newItem: InventoryItem = {
+                id: crypto.randomUUID(),
+                name: newName.trim(),
+                barcode: scannedBarcode,
+                category: selectedCat,
+                pricePerUnitWithoutIVA: 0,
+                stockByLocation: INVENTORY_LOCATIONS.reduce(
+                  (acc, loc) => ({ ...acc, [loc]: 0 }),
+                  {}
+                ),
+              };
+              item = newItem;
+              onSaveInventoryItem(newItem);
+              alert(`✨ ¡Registrado! ${newName}`);
+            }
+          }
+        }
+      }
+
+      // 4. FLUJO FINAL: Si tenemos un producto (porque ya existía o lo acabamos de crear/vincular)
       if (item) {
-        const qty = window.prompt(
-          `✅ PRODUCTO: ${item.name}\n\nIntroduce la cantidad a sumar:`,
+        setIsScannerOpen(false);
+
+        const locIndex = window.prompt(
+          `📍 GESTIONAR STOCK: ${item.name.toUpperCase()}\n\n` +
+            `Selecciona dónde añadir cantidad:\n` +
+            INVENTORY_LOCATIONS.map((l, i) => `${i + 1}. ${l}`).join("\n"),
           "1"
         );
 
-        if (qty !== null) {
-          const numericQty = parseDecimal(qty);
-          const updatedStock = {
-            ...item.stockByLocation,
-            Almacén: (Number(item.stockByLocation?.Almacén) || 0) + numericQty,
-          };
+        if (locIndex !== null) {
+          const selectedLoc =
+            INVENTORY_LOCATIONS[parseInt(locIndex) - 1] ||
+            INVENTORY_LOCATIONS[0];
+          const qty = window.prompt(
+            `¿Qué cantidad vas a añadir en ${selectedLoc}?`,
+            "1"
+          );
 
-          onSaveInventoryItem({
-            ...item,
-            stockByLocation: updatedStock,
-          });
+          if (qty !== null && qty.trim() !== "") {
+            const numericQty = parseDecimal(qty);
+
+            const updatedItem = {
+              ...item,
+              stockByLocation: {
+                ...item.stockByLocation,
+                [selectedLoc]: Number(
+                  (
+                    (Number(item.stockByLocation?.[selectedLoc]) || 0) +
+                    numericQty
+                  ).toFixed(2)
+                ),
+              },
+            };
+
+            onSaveInventoryItem(updatedItem);
+            alert(`✅ Stock actualizado en ${selectedLoc}: ${item.name}`);
+          }
         }
       } else {
-        alert("❌ Código no registrado: " + decodedText);
+        setIsScannerOpen(false);
       }
 
-      // Limpieza de efectos y cierre automático
       if (container) container.classList.remove("scan-success-border");
-      setIsScannerOpen(false);
-    }, 500); // 400ms para que de tiempo a sentir la vibración y ver el verde
+    }, 500);
   };
 
   // 2. Función de Galería (Safari & Chrome)
@@ -836,7 +890,7 @@ const InventoryComponent: React.FC<InventoryProps> = ({
     );
   };
 
-  // 🛑 FUNCIÓN: Calcular el valor total del stock (Aseguramos la conversión a número)
+  // Calcular el valor total del stock (Aseguramos la conversión a número)
   const calculateTotalValue = (item: InventoryItem): number => {
     const totalStock = calculateTotalStock(item);
     // Si el precio es undefined o null, se usa 0.
@@ -963,7 +1017,7 @@ const InventoryComponent: React.FC<InventoryProps> = ({
       return acc;
     }, {} as { [key: string]: InventoryItem[] });
 
-    // 🛑 AÑADIDO: Ordenar alfabéticamente los artículos dentro de cada categoría
+    // Ordenar alfabéticamente los artículos dentro de cada categoría
     Object.keys(groups).forEach((category) => {
       groups[category].sort((a, b) => a.name.localeCompare(b.name));
     });
@@ -1003,12 +1057,12 @@ const InventoryComponent: React.FC<InventoryProps> = ({
     });
   }, [inventoryItems, stockInOrders]);
 
-  // 🛑 CORRECCIÓN: Implementación de handlers para estado temporal y lógica de guardado
+  // Implementación de handlers para estado temporal y lógica de guardado
   const openInventoryModal = (item?: InventoryItem) => {
     const itemToEdit = item || emptyInventoryItem;
     setCurrentInventoryItem(itemToEdit);
 
-    // 🛑 CORRECCIÓN CLAVE: Si el precio es 0, inicializar como cadena vacía ("")
+    // Si el precio es 0, inicializar como cadena vacía ("")
     const priceValue = itemToEdit.pricePerUnitWithoutIVA || 0;
     setTempPriceString(
       priceValue > 0.01 ? String(priceValue).replace(".", ",") : ""
@@ -1020,14 +1074,12 @@ const InventoryComponent: React.FC<InventoryProps> = ({
   const closeInventoryModal = () => {
     setInventoryModalOpen(false);
     setCurrentInventoryItem(emptyInventoryItem);
-    // 🛑 LIMPIAR ESTADO TEMPORAL AL CERRAR
     setTempPriceString("");
   };
 
   const handleSaveInventory = () => {
     const itemToSave: Partial<InventoryItem> = { ...currentInventoryItem };
 
-    // 🛑 USAR EL VALOR PARSEADO DEL ESTADO TEMPORAL
     const finalPrice = parseDecimal(tempPriceString);
     itemToSave.pricePerUnitWithoutIVA = finalPrice;
 
@@ -1080,7 +1132,7 @@ const InventoryComponent: React.FC<InventoryProps> = ({
     location: string,
     value: string
   ) => {
-    // 🛑 CORRECCIÓN: Permite coma (,) o punto (.) como separador decimal y hasta DOS decimales.
+    // Permite coma (,) o punto (.) como separador decimal y hasta DOS decimales.
     if (value && !/^\d*([,.]\d{0,2})?$/.test(value)) {
       return;
     }
@@ -1095,7 +1147,7 @@ const InventoryComponent: React.FC<InventoryProps> = ({
     if (tempValue !== undefined) {
       const newStock = parseDecimal(tempValue); // Nuevo stock (número)
 
-      // 🛑 CORRECCIÓN CLAVE: Usar Number() y comparación por Epsilon para robustez de punto flotante.
+      // Usar Number() y comparación por Epsilon para robustez de punto flotante.
       const currentStock = Number(item.stockByLocation[location]) || 0; // Stock actual (aseguramos que es número)
       const difference = Math.abs(newStock - currentStock);
       const EPSILON = 0.001; // Tolerancia de 0.001
@@ -1103,11 +1155,11 @@ const InventoryComponent: React.FC<InventoryProps> = ({
       if (difference > EPSILON) {
         // Solo guardamos si hay una diferencia significativa
         const updatedStockByLocation = {
-          ...item.stockByLocation, // 🛑 Esto ahora es un objeto plano gracias a la corrección en App.tsx
-          [location]: newStock, // Guardamos el nuevo valor numérico parseado
+          ...item.stockByLocation,
+          [location]: newStock,
         };
         onSaveInventoryItem({
-          ...item, // 🛑 IMPORTANTE: Mantenemos el objeto 'item' completo, que incluye el precio.
+          ...item, // 🛑
           stockByLocation: updatedStockByLocation,
         });
       }
@@ -1154,7 +1206,7 @@ const InventoryComponent: React.FC<InventoryProps> = ({
       return;
     }
 
-    // 🛑 Sincronizar precios con el Inventario General
+    // Sincronizar precios con el Inventario General
     currentPurchaseOrder.items.forEach((orderItem) => {
       const originalItem = inventoryItems.find(
         (i) => i.id === orderItem.inventoryItemId
@@ -1301,7 +1353,6 @@ const InventoryComponent: React.FC<InventoryProps> = ({
     setCurrentPurchaseOrder((prev) => {
       const newItems = [...prev.items];
       if (newItems[index]) {
-        // 🛑 Usamos parsedQuantity para la lógica del pedido
         newItems[index].quantity = parsedQuantity;
       }
       return { ...prev, items: newItems };
@@ -1319,7 +1370,7 @@ const InventoryComponent: React.FC<InventoryProps> = ({
     newItems[index] = {
       ...newItems[index],
       [field]: value,
-      // Asignamos el precio internamente aunque no haya recuadro
+
       pricePerUnitWithoutIVA: selectedItem?.pricePerUnitWithoutIVA || 0,
     };
 
@@ -1367,7 +1418,7 @@ const InventoryComponent: React.FC<InventoryProps> = ({
 
     // 2. Mapear artículos normales
     const recordItems: InventoryRecordItem[] = inventoryItems
-      .filter((item) => !item.name.toLowerCase().includes("cajas vacias")) // Quitamos el ítem genérico
+      .filter((item) => !item.name.toLowerCase().includes("cajas vacias"))
       .map((item) => ({
         itemId: item.id,
         name: item.name,
@@ -1399,14 +1450,14 @@ const InventoryComponent: React.FC<InventoryProps> = ({
           recordItems.push({
             itemId: `box-${brand}`,
             name: `CAJAS ${brand.toUpperCase()}`,
-            category: " [📦] Embalajes", // CATEGORÍA CLAVE
+            category: " [📦] Embalajes",
             currentStock: cantidad * m,
             pendingStock: 0,
             initialStock: cantidad * m,
             endStock: cantidad * m,
             consumption: 0,
             stockByLocationSnapshot: { Almacén: cantidad * m },
-            pricePerUnitWithoutIVA: 0, // El precio es 0 para embalajes
+            pricePerUnitWithoutIVA: 0,
           });
         }
       });
@@ -1481,7 +1532,7 @@ const InventoryComponent: React.FC<InventoryProps> = ({
     onDeleteAllInventoryRecords();
   };
 
-  // NUEVA FUNCIÓN PARA BORRAR UN REGISTRO INDIVIDUAL
+  // FUNCIÓN PARA BORRAR UN REGISTRO INDIVIDUAL
   const handleDeleteRecord = (record: InventoryRecord) => {
     if (
       window.confirm(
@@ -1632,7 +1683,6 @@ const InventoryComponent: React.FC<InventoryProps> = ({
                     dataKey="gasto"
                     radius={[4, 4, 0, 0]}
                     cursor="pointer"
-                    // 🛑 EVENTO CLIC: Selecciona la categoría para filtrar el siguiente gráfico
                     onClick={(data) => setSelectedCategory(data.fullName)}
                   >
                     {categoryData.map((entry, i) => (
@@ -1789,7 +1839,6 @@ const InventoryComponent: React.FC<InventoryProps> = ({
       category: string;
     };
 
-    // Ahora recordItems es reconocido como un Array, el .map funcionará:
     const itemsWithCategory: DetailedInventoryRecordItem[] = recordItems.map(
       (recordItem) => {
         const inventoryItem = inventoryItems.find(
@@ -1801,7 +1850,6 @@ const InventoryComponent: React.FC<InventoryProps> = ({
       }
     );
 
-    // El .filter y .length posteriores funcionarán sin problemas:
     const relevantItems = itemsWithCategory.filter(
       (item) => !isAnalysis || (item.consumption || 0) > 0.001
     );
@@ -1843,9 +1891,8 @@ const InventoryComponent: React.FC<InventoryProps> = ({
         return catA.localeCompare(catB);
       }
     );
-    // END NEW LOGIC
 
-    // MODIFIED: Acepta ítems ya filtrados para la categoría
+    // Acepta ítems ya filtrados para la categoría
     const renderAnalysisTable = (items: DetailedInventoryRecordItem[]) => {
       const consumedItems = items;
 
@@ -1910,8 +1957,7 @@ const InventoryComponent: React.FC<InventoryProps> = ({
                   </td>
                                    {/* 🛑 STOCK ACTUAL (Data) */}               
                   <td className="px-0 py-1 whitespace-nowrap text-sm text-center text-gray-300 min-w-[40px]">
-                               {/* Muestra el stock actual (EndStock) */}       
-                             
+                                     
                     {item.endStock && item.endStock > 0.001
                       ? item.endStock.toFixed(1).replace(".", ",")
                       : "0,0"}
@@ -1973,7 +2019,7 @@ const InventoryComponent: React.FC<InventoryProps> = ({
       );
     };
 
-    // MODIFIED: Acepta ítems ya filtrados para la categoría
+    // Acepta ítems ya filtrados para la categoría
     const renderSnapshotTable = (items: DetailedInventoryRecordItem[]) => {
       const calculateSnapshotTotalStock = (
         item: DetailedInventoryRecordItem
@@ -2118,7 +2164,6 @@ const InventoryComponent: React.FC<InventoryProps> = ({
                           ""
                         ) : calculatedTotal > 0.001 ? (
                           <div className="bg-slate-700 rounded-md p-1 px-2 w-20 mx-auto text-lg font-bold text-green-400">
-                            {/* 🛑 CAMBIO: Ahora redondea si es Material O si es Embalajes */}
                             {item.category.toLowerCase().includes("material") ||
                             item.category.toLowerCase().includes("embalajes")
                               ? Math.round(calculatedTotal)
@@ -2159,7 +2204,6 @@ const InventoryComponent: React.FC<InventoryProps> = ({
                                 {brand.toUpperCase()}
                               </td>
 
-                              {/* Ocupamos el hueco de las ubicaciones para el texto del cálculo */}
                               <td
                                 colSpan={INVENTORY_LOCATIONS.length + 2}
                                 className="p-1 text-right pr-6 text-[11px] text-slate-500 italic uppercase font bold"
@@ -2169,7 +2213,6 @@ const InventoryComponent: React.FC<InventoryProps> = ({
 
                               <td className={TOTAL_VALUE_WIDTH}></td>
 
-                              {/* Resultado final en amarillo */}
                               <td
                                 className={`text-center text-lg font-bold text-yellow-400 w-20 mx-auto px-2 ${TOTAL_STOCK_WIDTH}`}
                               >
@@ -2199,7 +2242,7 @@ const InventoryComponent: React.FC<InventoryProps> = ({
             Registrado el
             {formatUTCToLocal(viewingRecord.date)}.
           </p>
-          {/* MODIFICADO PARA AGRUPAR POR CATEGORÍA */}
+
           <div className="space-y-4">
             {sortedHistoryGroups.map(([category, items]) => (
               <CategoryAccordion
@@ -2214,7 +2257,6 @@ const InventoryComponent: React.FC<InventoryProps> = ({
               </CategoryAccordion>
             ))}
           </div>
-          {/* FIN MODIFICACIÓN */}
         </div>
       </Modal>
     );
@@ -2256,7 +2298,7 @@ const InventoryComponent: React.FC<InventoryProps> = ({
           </span>
         </div>
       </div>
-      {/* SECCIÓN CODIGO DE BARRAS NUEVO */}
+      {/* SECCIÓN CODIGO DE BARRAS */}
 
       <div className="flex flex-col gap-1">
         <label className="text-xs text-slate-400 font-medium ml-1">
@@ -2265,14 +2307,16 @@ const InventoryComponent: React.FC<InventoryProps> = ({
         <div className="relative">
           <input
             type="text"
+            inputMode="numeric"
             placeholder="Escanear o escribir código..."
             value={currentInventoryItem.barcode || ""}
-            onChange={(e) =>
+            onChange={(e) => {
+              const val = e.target.value.replace(/\D/g, "");
               setCurrentInventoryItem({
                 ...currentInventoryItem,
-                barcode: e.target.value,
-              })
-            }
+                barcode: val,
+              });
+            }}
             className="bg-gray-700 text-white rounded p-2 w-full border border-gray-600 focus:ring-2 focus:ring-indigo-500 pl-10"
           />
           <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none opacity-50">
@@ -2350,8 +2394,6 @@ const InventoryComponent: React.FC<InventoryProps> = ({
     // Actualizamos el pedido actual
     setCurrentPurchaseOrder((prev) => ({ ...prev, items: smartItems }));
 
-    // 🛑 CRUCIAL: Actualizamos los estados temporales para que los inputs
-    // de la lista muestren los valores amarillos correctamente.
     const tempQs: Record<number, string> = {};
     const tempPs: Record<number, string> = {};
 
@@ -2473,7 +2515,7 @@ const InventoryComponent: React.FC<InventoryProps> = ({
                 key={index}
                 className="grid grid-cols-12 gap-2 items-center p-2 bg-gray-900/50 rounded-lg border border-gray-800"
               >
-                {/* 1. SELECCIÓN DE BEBIDA (col-span-6) */}
+                {/* 1. SELECCIÓN DE BEBIDA */}
                 <div className="col-span-6">
                   {!orderItem.inventoryItemId ? (
                     <select
@@ -2506,7 +2548,7 @@ const InventoryComponent: React.FC<InventoryProps> = ({
                   )}
                 </div>
 
-                {/* 2. CANTIDAD (col-span-2) - AHORA AMARILLO */}
+                {/* 2. CANTIDAD */}
                 <div className="col-span-2">
                   <input
                     type="text"
@@ -2523,12 +2565,11 @@ const InventoryComponent: React.FC<InventoryProps> = ({
                   />
                 </div>
 
-                {/* 3. P.U. NETO (col-span-3) - RECUPERADO Y AMARILLO */}
+                {/* 3. P.U. NETO  */}
                 <div className="col-span-3">
                   <input
                     type="text"
                     placeholder="P.U. Neto"
-                    // Muestra el precio actual con coma para facilitar la edición
                     value={
                       tempOrderPrices[index] ??
                       (orderItem.pricePerUnitWithoutIVA === 0
@@ -2565,7 +2606,7 @@ const InventoryComponent: React.FC<InventoryProps> = ({
                   />
                 </div>
 
-                {/* 4. BOTÓN ELIMINAR (col-span-1) */}
+                {/* 4. BOTÓN ELIMINAR */}
                 <button
                   onClick={() => removeOrderItem(index)}
                   className="col-span-1 text-red-500 flex justify-center"
@@ -2628,8 +2669,6 @@ const InventoryComponent: React.FC<InventoryProps> = ({
             className="flex flex-col sm:flex-row justify-start sm:justify-between items-start sm:items-center mb-4 gap-2 
                      sticky top-16 z-50 bg-slate-900 py-3 -mx-4 px-4 border-b border-slate-700/50 shadow-lg"
           >
-            {/* top-16 es la clave: pega esta barra justo debajo de los 64px de la cabecera principal */}
-
             <div className="flex w-full gap-2 flex-wrap sm:justify-start">
               <div className="relative w-7/12 max-w-none sm:w-56 order-1">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
@@ -2661,20 +2700,18 @@ const InventoryComponent: React.FC<InventoryProps> = ({
             </div>
 
             <div className="flex items-center justify-between gap-2 flex-shrink-0 w-full sm:w-auto sm:justify-end order-3 mt-2 sm:mt-0">
-              {/* 🛑 BOTÓN DE DESCARGA: Ancho fijo 'w-8' en móvil y padding 'px-2' */}
               <button
                 onClick={handleDownloadLastSnapshot}
-                // w-8 (móvil compacto), md:w-auto (escritorio completo), px-2 (padding reducido en móvil)
                 className="bg-green-600 hover:bg-green-700 text-white font-medium py-1.5 px-2 md:px-3 rounded-lg flex items-center justify-center gap-1 text-sm transition duration-300 h-7 w-8 md:w-auto"
                 title="Descargar Última Instantánea de Inventario"
                 disabled={!lastSnapshotRecord}
               >
                 <ExportIcon className="h-6 w-6 md:h-4 md:w-4" />
-                {/* Ocultar texto hasta md */}
+
                 <span className="hidden md:inline">Descargar</span>
               </button>
 
-              {/* 🛑 BOTÓN RESETEAR: Ancho fijo 'w-8' en móvil y padding 'px-2' */}
+              {/* 🛑 BOTÓN RESETEAR */}
               <button
                 onClick={handleResetInventory}
                 className="bg-red-600 hover:bg-red-700 text-white font-medium py-1.5 px-2 md:px-3 rounded-lg flex items-center justify-center gap-1 text-sm transition duration-300 h-7 w-8 md:w-auto"
@@ -2685,17 +2722,16 @@ const InventoryComponent: React.FC<InventoryProps> = ({
                 <span className="hidden md:inline">Reset</span>
               </button>
 
-              {/* 🛑 BOTÓN GUARDAR: Ancho fijo 'w-8' en móvil y padding 'px-2' */}
+              {/* 🛑 BOTÓN GUARDAR */}
               <button
                 onClick={handleSaveInventorySnapshot}
                 className="bg-violet-600 hover:bg-violet-700 text-white font-medium py-1.5 px-2 md:px-3 rounded-lg flex items-center justify-center gap-1 text-sm transition duration-300 h-7 w-8 md:w-auto"
                 title="Guardar Snapshot"
               >
                 <InventoryIcon className="h-6 w-6 md:h-4 md:w-4" />
-                {/* Ocultar texto hasta md */}
                 <span className="hidden md:inline">Guardar</span>
               </button>
-              {/* 🔍 BOTÓN ESCANEAR CÓDIGO DE BARRAS (Insertado aquí) */}
+              {/* 🔍 BOTÓN ESCANEAR CÓDIGO DE BARRAS */}
               <button
                 onClick={() => setIsScannerOpen(true)}
                 className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-1.5 px-2 md:px-3 rounded-lg flex items-center justify-center gap-1 text-sm transition duration-300 h-7 w-8 md:w-auto"
@@ -2704,14 +2740,14 @@ const InventoryComponent: React.FC<InventoryProps> = ({
                 <span className="text-base">🔍</span>
                 <span className="hidden md:inline">Lector</span>
               </button>
-              {/* 🛑 BOTÓN NUEVO PRODUCTO: Ancho fijo 'w-8' en móvil y padding 'px-2' */}
+              {/* 🛑 BOTÓN NUEVO PRODUCTO */}
               <button
                 onClick={() => openInventoryModal(undefined)}
                 className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-1.5 px-2 md:px-3 rounded-lg flex items-center justify-center gap-1 text-sm transition duration-300 h-7 w-8 md:w-auto"
                 title="Nuevo Producto"
               >
                 <PlusIcon className="h-6 w-6 md:h-4 md:w-4" />
-                {/* Ocultar texto hasta md */}
+
                 <span className="hidden md:inline">Producto</span>
               </button>
             </div>
@@ -2731,11 +2767,10 @@ const InventoryComponent: React.FC<InventoryProps> = ({
                 <CategoryAccordion
                   key={category}
                   title={category}
-                  itemCount={items.length} // Aquí items ya no será unknown
+                  itemCount={items.length}
                   initialOpen={true}
                 >
                   <div className="overflow-x-auto">
-                    {/* 🛑 table-fixed Mantiene las columnas fijas a la derecha */}
                     <table className="min-w-full table-fixed">
                       <thead>
                         <tr>
@@ -2744,7 +2779,7 @@ const InventoryComponent: React.FC<InventoryProps> = ({
                             ARTÍCULO
                           </th>
 
-                          {/* 🛑 AÑADIDO: P.U. s/IVA (w-20 min-w:[80px]) */}
+                          {/* 🛑 AÑADIDO: P.U. s/IVA */}
                           <th className="p-1 text-center text-xs font-medium text-gray-300 uppercase w-20 min-w-[80px]">
                             P.U. s/IVA
                           </th>
@@ -2756,7 +2791,6 @@ const InventoryComponent: React.FC<InventoryProps> = ({
                           ).map((loc) => (
                             <th
                               key={loc}
-                              // 🛑 Ancho pequeño y fijo para el campo de stock
                               className={`p-1 text-center text-xs font-medium text-gray-300 uppercase w-16 whitespace-nowrap overflow-hidden text-ellipsis`}
                               title={loc}
                             >
@@ -2788,7 +2822,7 @@ const InventoryComponent: React.FC<InventoryProps> = ({
 
                           return (
                             <tr key={item.id} className="hover:bg-gray-700/50">
-                              {/* 🛑 ARTÍCULO DATA (w-40 min-w:[150px]) */}
+                              {/* 🛑 ARTÍCULO DATA  */}
                               <td className="p-1 whitespace-nowrap overflow-hidden text-ellipsis text-sm font-medium text-white w-40 min-w-[150px] max-w-[220px]">
                                 {item.name}
                               </td>
@@ -2884,7 +2918,6 @@ const InventoryComponent: React.FC<InventoryProps> = ({
                                 </span>
                               </td>
 
-                              {/* Ancho fijo para acciones y usar justify-end */}
                               <td className="p-1 whitespace-nowrap text-right text-sm w-14">
                                 <div className="flex justify-end items-center gap-1">
                                   <button
@@ -3456,7 +3489,37 @@ const InventoryComponent: React.FC<InventoryProps> = ({
               >
                 {/* La línea roja que sube y baja */}
                 <div className="laser-line"></div>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const video = document.querySelector("video");
+                    const track =
+                      video?.srcObject instanceof MediaStream
+                        ? video.srcObject.getVideoTracks()[0]
+                        : null;
 
+                    if (track) {
+                      try {
+                        // Usamos 'as any' para evitar que TypeScript se queje de propiedades no estándar
+                        const capabilities = track.getCapabilities() as any;
+                        const settings = track.getSettings() as any;
+
+                        if (capabilities.torch) {
+                          await track.applyConstraints({
+                            advanced: [{ torch: !settings.torch }],
+                          } as any);
+                        } else {
+                          alert("Linterna no disponible en este dispositivo");
+                        }
+                      } catch (err) {
+                        console.error("Error al controlar la linterna:", err);
+                      }
+                    }
+                  }}
+                  className="absolute top-4 right-4 z-50 p-2 bg-black/60 rounded-full text-yellow-400 border border-white/20 hover:bg-black/80 active:scale-95 transition-all"
+                >
+                  <span className="text-xl leading-none">🔦</span>
+                </button>
                 {/* Esquinas blancas de enfoque */}
                 <div className="absolute inset-0 z-20 pointer-events-none">
                   <div className="absolute top-4 left-4 w-8 h-8 border-t-4 border-l-4 border-white/40 rounded-tl-lg"></div>
